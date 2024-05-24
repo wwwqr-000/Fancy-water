@@ -1,0 +1,25 @@
+Raycasting wateroppervlak met bomen en een stad.
+
+De gebouwen bestaan uit blokken, zoals in minecraft. Elk blok heeft zijn eigen reflectiveness en roughness.
+
+(Water is stil en weerspiegelend. (De gebouwen zullen hier in te zijn zijn))
+
+Bomen langs de kant van het water. (Ook blokken voor nu)
+
+
+
+Stap 1: Lessen van Nigel volgen en de basics leren
+
+Stap 2: Reflective sphere maken.
+
+Stap 3: Water maken (stil, maar wel reflective)
+
+Stap 4: Material map maken van materialen en blocks die we gaan gebruiken.
+
+Stap 5: Objecten onderwater toevoegen, denk aan stenen, blokken, etc...
+
+Stap 6: Bomen langs de kant toevoegen.
+
+Stap 7: Gebouwen (minecraft huizen en flats) toevoegen in achtergrond, zodat deze te zien zijn in de water reflectie. (Lava toevoegen in b.v een blacksmith gebouw. Of een vulkaan?)
+
+Daarna kunnen we nog verder gaan met eventueel het water laten golven of andere bewegende objecten in de omgeving.
