@@ -1,0 +1,12 @@
+Dot product
+
+->. ->.
+v    v
+
+
+
+^   ^
+|   |    = 1
+
+
+Invert square law = hoe dichter bij de zon, hoe meer intensiteit

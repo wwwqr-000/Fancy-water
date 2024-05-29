@@ -1,7 +1,3 @@
-//
-// Created by Bardio on 22/05/2024.
-//
-
 #include <bardrix/objects.h>
 
 /// \brief Sphere shape
