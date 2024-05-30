@@ -3,15 +3,17 @@
 //
 
 #pragma once
-#ifndef _WIN32
-    #error "This class is only for Windows, use any other window library like GLFW, QT, etc."
-#endif
+#ifdef _WIN32
 
 #include <bardrix/bardrix.h>
 #include <bardrix/color.h>
+
+#undef UNICODE // This is for the window class to work with char* instead of wchar_t* (unicode)
 #include <Windows.h>
+
 #include <cstdint>
 #include <functional>
+#include <vector>
 
 namespace bardrix {
 
@@ -53,9 +55,9 @@ namespace bardrix {
         HWND hwnd_{};
 
         /// \brief Buffers for swapping between displaying and drawing.
-        std::vector<uint32_t> back_buffer, front_buffer;
+        std::vector<uint32_t> back_buffer_, front_buffer_;
         /// \brief The bitmap info for the window.
-        BITMAPINFO bmi = {};
+        BITMAPINFO bmi_ = {};
 
     public:
         /// \brief Constructor for the window class.
@@ -108,3 +110,5 @@ namespace bardrix {
 
     }; // class window
 } // namespace bardrix
+
+#endif // _WIN32

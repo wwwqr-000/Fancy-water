@@ -6,6 +6,7 @@
 #include <thread>
 #include <vector>
 #include <future>
+#include <algorithm>
 
 #ifdef _WIN32
 
@@ -39,7 +40,7 @@ void tickFunc(bardrix::light &light, bardrix::window &window) {
     }
 }
 
-double calculate_light_intensity(const bardrix::point3& intersection_point, const bardrix::vector3& intersection_normal, const bardrix::light& light) {
+/*double calculate_light_intensity(const bardrix::point3& intersection_point, const bardrix::vector3& intersection_normal, const bardrix::light& light) {
 
     const bardrix::vector3 light_intersection_vector = intersection_point.vector_to(light.position).normalized();
 
@@ -50,9 +51,46 @@ double calculate_light_intensity(const bardrix::point3& intersection_point, cons
 
     // We use the angle and the inverse square law to calculate the intensity
     return angle * light.inverse_square_law(intersection_point);
+}*/
+
+/*
+Nieuwe versie van calculate_light_intensity voor reflectie met diffuse,ambient,specular
+OUDE === double projected_angle_intensity = calculate_light_intensity(intersection.value(), sphere_obj1.normal_at(intersection.value()), light);
+sphere === de shape van het object die is geraakt
+NIEUWE === double projected_angle_intensity = calculate_light_intensity(objects[0],light,camera,intersection.value());
+*/
+double calculate_light_intensity(const bardrix::shape& shape, const bardrix::light& light, const bardrix::camera& camera,
+    const bardrix::point3& intersection_point) {
+    const bardrix::vector3 light_intersection_vector = intersection_point.vector_to(light.position).normalized();
+
+    // Angle between the normal and the light intersection vector
+    const double angle = shape.normal_at(intersection_point).dot(light_intersection_vector);
+
+    if (angle < 0) // This means the light is behind the intersection_point
+    return 0;
+
+    // Specular reflection
+    bardrix::vector3 reflection = bardrix::quaternion::mirror(light_intersection_vector,
+    shape.normal_at(intersection_point));
+    double specular_angle = reflection.dot(camera.position.vector_to(intersection_point).normalized());
+    double specular = std::pow(specular_angle, shape.get_material().get_shininess());
+
+    // We're calculating phong shading (ambient + diffuse + specular)
+    double intensity = shape.get_material().get_ambient();
+    intensity += shape.get_material().get_diffuse() * angle;
+    intensity += shape.get_material().get_specular() * specular;
+
+    // Max intensity is 1
+    return min(1.0, intensity * light.inverse_square_law(intersection_point));
 }
 
+double calc_distance(const bardrix::point3& p1, const bardrix::point3& p2) {
+    return std::sqrt(pow(p2.x - p1.x, 2) + pow(p2.y - p1.y, 2) + pow(p2.z - p1.z, 2));
+}
+
+
 int main() {
+    std::vector<sphere> objects;
     int width = 600;
     int height = 600;
     // Create a window
@@ -62,34 +100,69 @@ int main() {
     bardrix::camera camera = bardrix::camera({ 0,0,0 }, { 0,0,1 }, width, height, 60);
 
     // Create a sphere
-    sphere sphere(1.0, bardrix::point3(0.0, 0.0, 3.0));
-
-    //here light plz
-    bardrix::point3 position(0, 4, 2);
+    sphere sphere_obj1(0.5, bardrix::point3(0.0, 0.0, 3.0)); // Middle ball
+    sphere sphere_obj2(0.3, bardrix::point3(-0.5, 0.5, 3.0)); // Left ball
+    sphere sphere_obj3(0.3, bardrix::point3(0.5, 0.5, 3.0)); // Right ball
+    //Set sphere material Material = Ambient,diffuse,specular,shininess
+    
+    
+    bardrix::material MaterialSphere1(0.0, 1.0, 0.0, 1.0);
+    MaterialSphere1.color = bardrix::color::red();
+    sphere_obj1.set_material(MaterialSphere1);
+    // Light
+    bardrix::point3 position(2, 2, 5);
     bardrix::color color = bardrix::color::red();
-    double intensity = 4.0;
+    double intensity = 10.0;
     bardrix::light light(position, intensity, color);
-    threadVec.emplace_back([&light, &window] { tickFunc(light, window); });//Set light obj in tick func
+    bardrix::point3 position2(1, 1, 5);
+    bardrix::color color2 = bardrix::color::magenta();
+    double intensity2 = 4.0;
+    //bardrix::light light2(position2, intensity2, color2);
+    //threadVec.emplace_back([&light, &window] { tickFunc(light, window); });//Set light obj in tick func
+    objects.emplace_back(sphere_obj1);
+    objects.emplace_back(sphere_obj2);
+    objects.emplace_back(sphere_obj3);
 
     
-    window.on_paint = [&camera, &sphere, &light](bardrix::window* window, std::vector<uint32_t>& buffer) {
-        // Draw the sphere
+    window.on_paint = [&camera, &objects, &light](bardrix::window* window, std::vector<uint32_t>& buffer) {
+        // Draw the scene
         for (int y = 0; y < window->get_height(); y++) {
             for (int x = 0; x < window->get_width(); x++) {
                 bardrix::ray ray = *camera.shoot_ray(x, y, 10);
-                std::optional<bardrix::point3> intersection = sphere.intersection(ray);
                 bardrix::color color = bardrix::color::black();
 
-                //if intensity needs a light then how can calculating the intensity need a light 
+                // Variables to keep track of the closest intersection point and object
+                std::optional<bardrix::point3> closest_intersection;
+                const sphere* closest_object = nullptr;
+                double closest_distance = std::numeric_limits<double>::infinity();
 
-                // If the ray intersects the sphere, paint the pixel white
-                if (intersection.has_value()) {
+                // Iterate over all objects to find the closest intersection
+                for (const auto& obj : objects) {
+                    std::optional<bardrix::point3> intersection = obj.intersection(ray);
+                    if (intersection.has_value()) {
+                        double distance = calc_distance(camera.position, intersection.value());
+                        if (distance < closest_distance) {
+                            closest_distance = distance;
+                            closest_intersection = intersection;
+                            closest_object = &obj;
+                        }
+                    }
+                }
 
-
-                    double projected_angle_intensity = calculate_light_intensity(intersection.value(), sphere.normal_at(intersection.value()), light);
+                // If there is an intersection, calculate intensity based on the closest object
+                if (closest_intersection.has_value() && closest_object != nullptr) {
+                    bardrix::point3 intersection_point = closest_intersection.value();
+                    bardrix::vector3 normal = closest_object->normal_at(intersection_point);
+                    
+                    double projected_angle_intensity = 0.0;
+                    for (const auto& obj : objects) {
+                        projected_angle_intensity += calculate_light_intensity(obj, light, camera, intersection_point);
+                    }
+                    
+                    // Ensure intensity is capped at 1.0
+                    projected_angle_intensity = min(projected_angle_intensity, 1.0);
 
                     color = bardrix::color::white() * projected_angle_intensity;
-
                 }
 
                 buffer[y * window->get_width() + x] = color.argb(); // ARGB is the format used by Windows API

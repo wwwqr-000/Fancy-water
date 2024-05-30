@@ -1,0 +1,7 @@
+Defusion
+Ambient light
+Specular
+
+
+
+(Voor phon)
