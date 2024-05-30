@@ -106,11 +106,17 @@ int main() {
     //Set sphere material Material = Ambient,diffuse,specular,shininess
     
     
-    bardrix::material MaterialSphere1(0.0, 1.0, 0.0, 1.0);
+    bardrix::material MaterialSphere1(0, 0.5, 0.7, 20);
+    bardrix::material MaterialSphere2(0, 0.5, 0.7, 20);
+    bardrix::material MaterialSphere3(0, 0.5, 0.7, 20);
     MaterialSphere1.color = bardrix::color::red();
+    MaterialSphere2.color = bardrix::color::magenta();
+    MaterialSphere3.color = bardrix::color::white();
     sphere_obj1.set_material(MaterialSphere1);
+    sphere_obj2.set_material(MaterialSphere2);
+    sphere_obj3.set_material(MaterialSphere3);
     // Light
-    bardrix::point3 position(2, 2, 5);
+    bardrix::point3 position(2, 5, 2);
     bardrix::color color = bardrix::color::red();
     double intensity = 10.0;
     bardrix::light light(position, intensity, color);
@@ -162,7 +168,7 @@ int main() {
                     // Ensure intensity is capped at 1.0
                     projected_angle_intensity = min(projected_angle_intensity, 1.0);
 
-                    color = bardrix::color::white() * projected_angle_intensity;
+                    color = closest_object->get_material().color * projected_angle_intensity;
                 }
 
                 buffer[y * window->get_width() + x] = color.argb(); // ARGB is the format used by Windows API
