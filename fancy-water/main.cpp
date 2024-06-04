@@ -13,6 +13,8 @@
 #include "sphere.h"
 #include "window.h"
 
+#include "cube_new.h"
+
 #include <bardrix/ray.h>
 #include <bardrix/light.h>
 #include <bardrix/camera.h>
@@ -91,6 +93,7 @@ double calc_distance(const bardrix::point3& p1, const bardrix::point3& p2) {
 
 int main() {
     std::vector<sphere> objects;
+    std::vector<cube_new> cubes;//Test (W.I.P)
     int width = 600;
     int height = 600;
     // Create a window
@@ -103,18 +106,22 @@ int main() {
     sphere sphere_obj1(0.5, bardrix::point3(0.0, 0.0, 3.0)); // Middle ball
     sphere sphere_obj2(0.3, bardrix::point3(-0.5, 0.5, 3.0)); // Left ball
     sphere sphere_obj3(0.3, bardrix::point3(0.5, 0.5, 3.0)); // Right ball
+    cube_new cube(0.2, bardrix::point3(1, 0.5, 3.0));//Test cube class
     //Set sphere material Material = Ambient,diffuse,specular,shininess
     
     
     bardrix::material MaterialSphere1(0, 0.5, 0.7, 20);
     bardrix::material MaterialSphere2(0, 0.5, 0.7, 20);
     bardrix::material MaterialSphere3(0, 0.5, 0.7, 20);
+    bardrix::material MaterialCube(0, 0.5, 0.7, 20);
     MaterialSphere1.color = bardrix::color::red();
     MaterialSphere2.color = bardrix::color::magenta();
     MaterialSphere3.color = bardrix::color::white();
+    MaterialCube.color = bardrix::color::green();
     sphere_obj1.set_material(MaterialSphere1);
     sphere_obj2.set_material(MaterialSphere2);
     sphere_obj3.set_material(MaterialSphere3);
+    cube.set_material(MaterialCube);
     // Light
     bardrix::point3 position(2, 5, 2);
     bardrix::color color = bardrix::color::red();
@@ -128,9 +135,10 @@ int main() {
     objects.emplace_back(sphere_obj1);
     objects.emplace_back(sphere_obj2);
     objects.emplace_back(sphere_obj3);
+    cubes.emplace_back(cube);
 
     
-    window.on_paint = [&camera, &objects, &light](bardrix::window* window, std::vector<uint32_t>& buffer) {
+    window.on_paint = [&camera, &objects, &light, &cubes](bardrix::window* window, std::vector<uint32_t>& buffer) {
         // Draw the scene
         for (int y = 0; y < window->get_height(); y++) {
             for (int x = 0; x < window->get_width(); x++) {
@@ -140,6 +148,7 @@ int main() {
                 // Variables to keep track of the closest intersection point and object
                 std::optional<bardrix::point3> closest_intersection;
                 const sphere* closest_object = nullptr;
+                const cube_new* closest_cube = nullptr;
                 double closest_distance = std::numeric_limits<double>::infinity();
 
                 // Iterate over all objects to find the closest intersection
@@ -170,6 +179,37 @@ int main() {
 
                     color = closest_object->get_material().color * projected_angle_intensity;
                 }
+
+                //cube-based
+                for (auto& cb : cubes) {
+                    std::optional<bardrix::point3> intersec = cb.intersection(ray);
+                    if (intersec.has_value()) {
+                        double dist = calc_distance(camera.position, intersec.value());
+                        if (dist < closest_distance) {
+                            closest_distance = dist;
+                            closest_intersection = intersec;
+                            closest_cube = &cb;
+                        }
+                    }
+                }
+
+                // If there is an intersection, calculate intensity based on the closest object
+                if (closest_intersection.has_value() && closest_cube != nullptr) {
+                    bardrix::point3 intersection_point = closest_intersection.value();
+                    bardrix::vector3 normal = closest_cube->normal_at(intersection_point);
+
+                    double projected_angle_intensity = 0.0;
+                    for (const auto& cb : cubes) {
+                        projected_angle_intensity += calculate_light_intensity(cb, light, camera, intersection_point);
+                    }
+
+                    // Ensure intensity is capped at 1.0
+                    projected_angle_intensity = min(projected_angle_intensity, 1.0);
+
+                    color = closest_cube->get_material().color * projected_angle_intensity;
+                }
+
+                //
 
                 buffer[y * window->get_width() + x] = color.argb(); // ARGB is the format used by Windows API
             }
