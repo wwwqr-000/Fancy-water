@@ -40,6 +40,8 @@ namespace bardrix {
         ///     };
         std::function<void(bardrix::window* window, std::vector<uint32_t>& buffer)> on_paint;
 
+        std::function<void(bardrix::window* window, WPARAM key)> on_keydown;
+
         /// \brief The on_close function, called when the window is closed.
         /// \param window The window that was closed.
         std::function<void(bardrix::window* window)> on_close;

@@ -13,7 +13,7 @@
 #include "sphere.h"
 #include "window.h"
 
-#include "cube_new.h"
+#include "cube.h"
 
 #include <bardrix/ray.h>
 #include <bardrix/light.h>
@@ -32,6 +32,7 @@ bool running = true;
 
 std::vector<std::thread> threadVec;
 
+
 void tickFunc(bardrix::light &light, bardrix::window &window) {
     while (running) {
         auto start = std::chrono::system_clock::now();
@@ -41,6 +42,9 @@ void tickFunc(bardrix::light &light, bardrix::window &window) {
         std::this_thread::sleep_for(std::chrono::system_clock::now() - start + std::chrono::milliseconds(200));
     }
 }
+
+
+
 
 /*double calculate_light_intensity(const bardrix::point3& intersection_point, const bardrix::vector3& intersection_normal, const bardrix::light& light) {
 
@@ -90,23 +94,28 @@ double calc_distance(const bardrix::point3& p1, const bardrix::point3& p2) {
     return std::sqrt(pow(p2.x - p1.x, 2) + pow(p2.y - p1.y, 2) + pow(p2.z - p1.z, 2));
 }
 
+void add_light(std::vector<bardrix::light>& lights, const bardrix::color& color, double brightness,bardrix::point3 position) {
+    bardrix::light light_source(position, brightness, color);
+    lights.emplace_back(light_source);
+}
 
 int main() {
-    std::vector<sphere> objects;
-    std::vector<cube_new> cubes;//Test (W.I.P)
+    std::vector<std::unique_ptr<bardrix::shape>> shapes;
+    // Definieer een vector om de lichten bij te houden
+    std::vector<bardrix::light> lights;
     int width = 600;
     int height = 600;
     // Create a window
-    bardrix::window window("Raytracing", width, height);
+    bardrix::window window("fancy-water", width, height);
 
     // Create a camera
-    bardrix::camera camera = bardrix::camera({ 0,0,0 }, { 0,0,1 }, width, height, 60);
+    bardrix::camera camera = bardrix::camera({ -1,0,0 }, { 0,0,1 }, width, height, 60);
 
     // Create a sphere
     sphere sphere_obj1(0.5, bardrix::point3(0.0, 0.0, 3.0)); // Middle ball
     sphere sphere_obj2(0.3, bardrix::point3(-0.5, 0.5, 3.0)); // Left ball
     sphere sphere_obj3(0.3, bardrix::point3(0.5, 0.5, 3.0)); // Right ball
-    cube_new cube(0.2, bardrix::point3(1, 0.5, 3.0));//Test cube class
+    cube cube2(0.2, bardrix::point3(1, 0.5, 3.0));//Test cube class
     //Set sphere material Material = Ambient,diffuse,specular,shininess
     
     
@@ -115,30 +124,34 @@ int main() {
     bardrix::material MaterialSphere3(0, 0.5, 0.7, 20);
     bardrix::material MaterialCube(0, 0.5, 0.7, 20);
     MaterialSphere1.color = bardrix::color::red();
-    MaterialSphere2.color = bardrix::color::magenta();
+    MaterialSphere2.color = bardrix::color::blue();
     MaterialSphere3.color = bardrix::color::white();
     MaterialCube.color = bardrix::color::green();
     sphere_obj1.set_material(MaterialSphere1);
     sphere_obj2.set_material(MaterialSphere2);
     sphere_obj3.set_material(MaterialSphere3);
-    cube.set_material(MaterialCube);
+    cube2.set_material(MaterialCube);
     // Light
     bardrix::point3 position(2, 5, 2);
     bardrix::color color = bardrix::color::red();
     double intensity = 10.0;
-    bardrix::light light(position, intensity, color);
+    //bardrix::light light(position, intensity, color);
     bardrix::point3 position2(1, 1, 5);
     bardrix::color color2 = bardrix::color::magenta();
     double intensity2 = 4.0;
     //bardrix::light light2(position2, intensity2, color2);
     //threadVec.emplace_back([&light, &window] { tickFunc(light, window); });//Set light obj in tick func
-    objects.emplace_back(sphere_obj1);
-    objects.emplace_back(sphere_obj2);
-    objects.emplace_back(sphere_obj3);
-    cubes.emplace_back(cube);
-
+    shapes.emplace_back(std::make_unique<sphere>(sphere_obj1));
+    shapes.emplace_back(std::make_unique<sphere>(sphere_obj2));
+    shapes.emplace_back(std::make_unique<sphere>(sphere_obj3));
+    shapes.emplace_back(std::make_unique<cube>(cube2));//Create cube
+    // Create initial lights
+    add_light(lights, bardrix::color::red(), 3.0,bardrix::point3(2,0,-1));
+    add_light(lights, bardrix::color::magenta(), 4.0,bardrix::point3(1,2,-1));
     
-    window.on_paint = [&camera, &objects, &light, &cubes](bardrix::window* window, std::vector<uint32_t>& buffer) {
+    
+    window.on_paint = [&camera, &shapes, &lights](bardrix::window* window, std::vector<uint32_t>& buffer) {
+        
         // Draw the scene
         for (int y = 0; y < window->get_height(); y++) {
             for (int x = 0; x < window->get_width(); x++) {
@@ -146,20 +159,22 @@ int main() {
                 bardrix::color color = bardrix::color::black();
 
                 // Variables to keep track of the closest intersection point and object
+                
                 std::optional<bardrix::point3> closest_intersection;
-                const sphere* closest_object = nullptr;
-                const cube_new* closest_cube = nullptr;
+                const bardrix::shape* closest_object = nullptr;//Sphere obj
+            
                 double closest_distance = std::numeric_limits<double>::infinity();
+                //const cube* closest_cube = nullptr;
 
                 // Iterate over all objects to find the closest intersection
-                for (const auto& obj : objects) {
-                    std::optional<bardrix::point3> intersection = obj.intersection(ray);
+                for (const auto& obj : shapes) {
+                    std::optional<bardrix::point3> intersection = obj->intersection(ray);
                     if (intersection.has_value()) {
                         double distance = calc_distance(camera.position, intersection.value());
                         if (distance < closest_distance) {
                             closest_distance = distance;
                             closest_intersection = intersection;
-                            closest_object = &obj;
+                            closest_object = obj.get();
                         }
                     }
                 }
@@ -169,51 +184,73 @@ int main() {
                     bardrix::point3 intersection_point = closest_intersection.value();
                     bardrix::vector3 normal = closest_object->normal_at(intersection_point);
                     
-                    double projected_angle_intensity = 0.0;
-                    for (const auto& obj : objects) {
-                        projected_angle_intensity += calculate_light_intensity(obj, light, camera, intersection_point);
-                    }
-                    
-                    // Ensure intensity is capped at 1.0
-                    projected_angle_intensity = min(projected_angle_intensity, 1.0);
+                    for (bardrix::light& l : lights) {
 
-                    color = closest_object->get_material().color * projected_angle_intensity;
-                }
-
-                //cube-based
-                for (auto& cb : cubes) {
-                    std::optional<bardrix::point3> intersec = cb.intersection(ray);
-                    if (intersec.has_value()) {
-                        double dist = calc_distance(camera.position, intersec.value());
-                        if (dist < closest_distance) {
-                            closest_distance = dist;
-                            closest_intersection = intersec;
-                            closest_cube = &cb;
-                        }
+                        double projected_angle_intensity = calculate_light_intensity(*closest_object, l, camera, intersection_point);
+                        color += l.color.blended(closest_object->get_material().color) * projected_angle_intensity;
                     }
                 }
 
-                // If there is an intersection, calculate intensity based on the closest object
-                if (closest_intersection.has_value() && closest_cube != nullptr) {
-                    bardrix::point3 intersection_point = closest_intersection.value();
-                    bardrix::vector3 normal = closest_cube->normal_at(intersection_point);
+                //
 
-                    double projected_angle_intensity = 0.0;
-                    for (const auto& cb : cubes) {
-                        projected_angle_intensity += calculate_light_intensity(cb, light, camera, intersection_point);
-                    }
+                //for (auto& cb : cubes) {
+                //    std::optional<bardrix::point3> intersec = cb.intersection(ray);
+                //    if (intersec.has_value()) {
+                //        double dist = calc_distance(camera.position, intersec.value());
+                //        if (dist < closest_distance) {
+                //            closest_distance = dist;
+                //            closest_intersection = intersec;
+                //            closest_cube = &cb;
+                //            
+                //        } 
+                //    }
+                //}
+                
+                //// If there is an intersection, calculate intensity based on the closest object
+                //if (closest_intersection.has_value() && closest_cube != nullptr) {
+                //    bardrix::point3 intersection_point = closest_intersection.value();
+                //    bardrix::vector3 normal = closest_cube->normal_at(intersection_point);
 
-                    // Ensure intensity is capped at 1.0
-                    projected_angle_intensity = min(projected_angle_intensity, 1.0);
+                //    double projected_angle_intensity = 0.0;
+                //    for (const auto& cb : cubes) {
+                //        projected_angle_intensity += calculate_light_intensity(cb, lights[1], camera, intersection_point);
+                //    }
 
-                    color = closest_cube->get_material().color * projected_angle_intensity;
-                }
+                //    // Ensure intensity is capped at 1.0
+                //    projected_angle_intensity = min(projected_angle_intensity, 1.0);
+
+                //    color = closest_cube->get_material().color * projected_angle_intensity;
+                //}
 
                 //
 
                 buffer[y * window->get_width() + x] = color.argb(); // ARGB is the format used by Windows API
             }
         }};
+    window.on_keydown = [&camera](bardrix::window* window, WPARAM key) {
+        switch (key)
+        {
+            // Case voor input A
+        case 0x41:
+            camera.position.x += 0.1;
+            break;
+            // Case input D
+        case 0x44:
+            camera.position.x += 0.1;
+            break;
+            // Case input S
+        case 0x53:
+            camera.position.z -= 0.1;
+            break;
+            // Case input W
+        case 0x57:
+            camera.position.z -= 0.1;
+            break;
+        default:
+            break;
+        }
+        window->redraw();
+        };
 
     window.on_resize = [&camera](bardrix::window* window, int width, int height) {
         // Resize the camera
@@ -232,6 +269,11 @@ int main() {
         std::cout << GetLastError() << std::endl;
         return -1;
     }
+
+    
+
+
+    bardrix::window::run();
 
     /*
     for (auto& t : threadVec) {

@@ -1,31 +1,26 @@
 #include <bardrix/objects.h>
 
-/// \brief Sphere shape
-class sphere : public bardrix::shape {
-protected:
-    /// \brief Radius of the sphere
-    double radius_;
 
-    // Material of the sphere (not used currently)
-    bardrix::material material_;
+class cube : public bardrix::shape {//Creating a test cube based on the sphere header
+    protected:
 
-public:
-    /// \brief Center of the sphere
-    bardrix::point3 position;
+        double radius_;
+        bardrix::material material_;
+        bardrix::point3 position_;
 
-    // CONSTRUCTORS
+    public:
+        cube();
+        explicit cube(double radius);
+        cube(double radius, const bardrix::point3& position);
 
-    explicit sphere(double radius);
-    sphere(double radius, const bardrix::point3& position);
+        cube(double radius, const bardrix::point3& position, const bardrix::material& material);
 
-    // GETTERS/SETTERS
-    NODISCARD const bardrix::material& get_material() const override;
-    NODISCARD const bardrix::point3& get_position() const override;
-    void set_material(const bardrix::material& material) override;
-    void set_position(const bardrix::point3& position) override;
+        NODISCARD const bardrix::material& get_material() const override;
+        NODISCARD const bardrix::point3& get_position() const override;
+        void set_material(const bardrix::material& material) override;
+        void set_position(const bardrix::point3& position) override;
 
-    // RAYTRACING
+        NODISCARD bardrix::vector3 normal_at(const bardrix::point3& intersection) const override;
 
-    NODISCARD bardrix::vector3 normal_at(const bardrix::point3& point) const override;
-    NODISCARD std::optional<bardrix::point3> intersection(const bardrix::ray& ray) const override;
-}; // class sphere
+        NODISCARD std::optional<bardrix::point3> intersection(const bardrix::ray& ray) const override;
+};

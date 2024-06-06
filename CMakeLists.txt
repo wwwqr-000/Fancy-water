@@ -15,7 +15,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(Bardrix)
 
 # Add your project files
-add_executable(${PROJECT_NAME} fancy-water/main.cpp fancy-water/sphere.cpp fancy-water/window.cpp fancy-water/cube_new.cpp)
+add_executable(${PROJECT_NAME} fancy-water/main.cpp fancy-water/sphere.cpp fancy-water/window.cpp fancy-water/cube.cpp)
 
 # Add bardrix library
 target_link_libraries(${PROJECT_NAME} Bardrix)
