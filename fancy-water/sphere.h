@@ -1,6 +1,7 @@
 //
 // Created by Bardio on 22/05/2024.
 //
+#pragma once 
 
 #include <bardrix/objects.h>
 
