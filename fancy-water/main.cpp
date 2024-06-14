@@ -4,6 +4,7 @@
 #include "sphere.h"
 #include "window.h"
 #include "cube.h"
+#include "world.hpp"
 #include <iostream>
 #include <thread>
 #include <vector>
@@ -79,17 +80,40 @@ void add_light(std::vector<bardrix::light>& lights, const bardrix::color& color,
     lights.emplace_back(light_source);
 }
 
+world createWorld(bardrix::camera &camera) {
+    world w("Fancy Water", bardrix::point3(10.0, 10.0, 10.0), false, false);//Open-world with volume 10x10x10 without a sun.
+
+    bardrix::light globalLight(bardrix::point3(0.0, 10.0, 0.0), 1, bardrix::color::white());
+    sphere s1(0.5, bardrix::point3(0.0, 0.0, 0.0));
+    sphere s2(0.5, bardrix::point3(1.0, 0.0, 0.0));
+    sphere s3(0.5, bardrix::point3(2.0, 0.0, 0.0));
+    sphere s4(0.5, bardrix::point3(4.0, 0.0, 0.0));
+
+    w.setCamera(camera);
+    w.addLight(globalLight);
+    w.addObject(std::make_unique<sphere>(s1));
+    w.addObject(std::make_unique<sphere>(s2));
+    w.addObject(std::make_unique<sphere>(s3));
+    w.addObject(std::make_unique<sphere>(s4));
+
+    return w;
+}
+
 int main() {
     std::vector<std::unique_ptr<bardrix::shape>> shapes;
-    // Definieer een vector om de lichten bij te houden
-    std::vector<bardrix::light> lights;
     int width = 600;
     int height = 600;
-    // Create a window
-    bardrix::window window("fancy-water", width, height);
 
     // Create a camera
     bardrix::camera camera = bardrix::camera({ -1,0,0 }, { 0,0,1 }, width, height, 60);
+
+    //Create a world object
+    world fancy_world = createWorld(camera);
+
+    // Definieer een vector om de lichten bij te houden
+    std::vector<bardrix::light> lights;
+    // Create a window
+    bardrix::window window("fancy-water", width, height);
 
     // Create a sphere
     sphere sphere_obj1(0.5, bardrix::point3(0.0, 0.0, 3.0)); // Middle ball
