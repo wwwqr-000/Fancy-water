@@ -1,5 +1,6 @@
 #include <bardrix/objects.h>
 
+#pragma once
 
 class cube : public bardrix::shape {//Creating a test cube based on the sphere header
     protected:

@@ -1,20 +1,14 @@
-//
-// Created by Bardio on 22/05/2024.
-//
+//Includes
+#ifdef _WIN32
 
+#include "sphere.h"
+#include "window.h"
+#include "cube.h"
 #include <iostream>
 #include <thread>
 #include <vector>
 #include <future>
 #include <algorithm>
-
-#ifdef _WIN32
-
-#include "sphere.h"
-#include "window.h"
-
-#include "cube.h"
-
 #include <bardrix/ray.h>
 #include <bardrix/light.h>
 #include <bardrix/camera.h>
@@ -28,11 +22,13 @@
 #include <bardrix/quaternion.h>
 //
 
-bool running = true;
+bool running = true;//Used to determen the status of the tick thread
 
+//Vector for threads
 std::vector<std::thread> threadVec;
 
 
+//Tick function to rotate a light object (Currently not used)
 void tickFunc(bardrix::light &light, bardrix::window &window) {
     while (running) {
         auto start = std::chrono::system_clock::now();
@@ -42,22 +38,6 @@ void tickFunc(bardrix::light &light, bardrix::window &window) {
         std::this_thread::sleep_for(std::chrono::system_clock::now() - start + std::chrono::milliseconds(200));
     }
 }
-
-
-
-
-/*double calculate_light_intensity(const bardrix::point3& intersection_point, const bardrix::vector3& intersection_normal, const bardrix::light& light) {
-
-    const bardrix::vector3 light_intersection_vector = intersection_point.vector_to(light.position).normalized();
-
-    const double angle = intersection_normal.dot(light_intersection_vector);
-
-    if (angle < 0) // This means the light is behind the intersection_point point
-        return 0;
-
-    // We use the angle and the inverse square law to calculate the intensity
-    return angle * light.inverse_square_law(intersection_point);
-}*/
 
 /*
 Nieuwe versie van calculate_light_intensity voor reflectie met diffuse,ambient,specular
