@@ -11,9 +11,10 @@ class world {
         std::vector<bardrix::light> lights;
         bool sun, box;
         bardrix::point3 dimBorder;
-        bardrix::camera camera;
 
     public:
+        bardrix::camera camera;
+
         //Bare minimum.
         world(std::string name, bardrix::point3 dimBorder, bool sun, bool box) : name(name), dimBorder(dimBorder), sun(sun), box(box) {}
 
@@ -51,6 +52,7 @@ class world {
 
         //Add a light to the light vector.
         void addLight(bardrix::light light) { this->lights.emplace_back(light); }
+        std::vector<bardrix::light> getLights() { return this->lights; }
 
         //Remove a light from the light vector, based on itself.
         /*

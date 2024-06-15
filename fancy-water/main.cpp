@@ -75,95 +75,90 @@ double calc_distance(const bardrix::point3& p1, const bardrix::point3& p2) {
     return std::sqrt(pow(p2.x - p1.x, 2) + pow(p2.y - p1.y, 2) + pow(p2.z - p1.z, 2));
 }
 
-void add_light(std::vector<bardrix::light>& lights, const bardrix::color& color, double brightness,bardrix::point3 position) {
-    bardrix::light light_source(position, brightness, color);
-    lights.emplace_back(light_source);
+//Materials we use in our world
+bardrix::material materials(std::string name) {
+    if (name == "iron") {
+        bardrix::material iron(0.0, 0.2, 0.9, 20.0);
+        iron.color = bardrix::color(233, 233, 233, 255);
+        return iron;
+    }
+    else if (name == "water") {
+        bardrix::material water(0.0, 1.0, 1.0, 10.0);
+        water.color = bardrix::color(30, 0, 255, 255);
+        return water;
+    }
+    else if (name == "lava") {
+        bardrix::material lava(0.0, 1.0, 1.0, 10.0);
+        lava.color = bardrix::color(255, 94, 0, 255);
+        return lava;
+    }
+    else if (name == "brick") {
+        bardrix::material brick(0.0, 0.8, 0.3, 1.0);
+        brick.color = bardrix::color(194, 71, 43, 255);
+        return brick;
+    }
+    else if (name == "stone") {
+        bardrix::material stone(0.0, 1.0, 0.1, 0.05);
+        stone.color = bardrix::color(109, 109, 109, 255);
+        return stone;
+    }
+    else if (name == "foliage") {
+        bardrix::material foliage(0.0, 1.0, 0.0, 0.0);
+        foliage.color = bardrix::color(0, 175, 23, 150);
+        return foliage;
+    }
+    else if (name == "test") {
+        bardrix::material test(0, 0.5, 0.7, 20);
+        test.color = bardrix::color(255, 0, 0, 255);
+        return test;
+    }
+
+    bardrix::material not_found(1.0, 1.0, 0.0, 1.0);
+    not_found.color = bardrix::color(255, 0, 200, 255);
+    return not_found;
 }
 
 world createWorld(bardrix::camera &camera) {
     world w("Fancy Water", bardrix::point3(10.0, 10.0, 10.0), false, false);//Open-world with volume 10x10x10 without a sun.
 
-    bardrix::light globalLight(bardrix::point3(0.0, 10.0, 0.0), 1, bardrix::color::white());
-    sphere s1(0.5, bardrix::point3(0.0, 0.0, 0.0));
-    sphere s2(0.5, bardrix::point3(1.0, 0.0, 0.0));
-    sphere s3(0.5, bardrix::point3(2.0, 0.0, 0.0));
-    sphere s4(0.5, bardrix::point3(4.0, 0.0, 0.0));
+    bardrix::light globalLight(bardrix::point3(-1, 0, 0), 4, bardrix::color::white());
+    sphere s1(0.5, bardrix::point3(0.0, 0.0, 3.0));
+    cube c1(0.5, bardrix::point3(0.0, 1.0, 3.0));
+
+    s1.set_material(materials("brick"));
+    c1.set_material(materials("iron"));
 
     w.setCamera(camera);
     w.addLight(globalLight);
     w.addObject(std::make_unique<sphere>(s1));
-    w.addObject(std::make_unique<sphere>(s2));
-    w.addObject(std::make_unique<sphere>(s3));
-    w.addObject(std::make_unique<sphere>(s4));
+    w.addObject(std::make_unique<cube>(c1));
 
     return w;
 }
 
 int main() {
-    std::vector<std::unique_ptr<bardrix::shape>> shapes;
     int width = 600;
     int height = 600;
+
+    //Create window
+    bardrix::window window("fancy-water", width, height);
 
     // Create a camera
     bardrix::camera camera = bardrix::camera({ -1,0,0 }, { 0,0,1 }, width, height, 60);
 
     //Create a world object
     world fancy_world = createWorld(camera);
-
-    // Definieer een vector om de lichten bij te houden
-    std::vector<bardrix::light> lights;
-    // Create a window
-    bardrix::window window("fancy-water", width, height);
-
-    // Create a sphere
-    sphere sphere_obj1(0.5, bardrix::point3(0.0, 0.0, 3.0)); // Middle ball
-    sphere sphere_obj2(0.3, bardrix::point3(-0.5, 0.5, 3.0)); // Left ball
-    sphere sphere_obj3(0.3, bardrix::point3(0.5, 0.5, 3.0)); // Right ball
-    cube cube2(0.2, bardrix::point3(1, 0.5, 3.0));//Test cube class
-    //Set sphere material Material = Ambient,diffuse,specular,shininess
     
-    
-    bardrix::material MaterialSphere1(0, 0.5, 0.7, 20);
-    bardrix::material MaterialSphere2(0, 0.5, 0.7, 20);
-    bardrix::material MaterialSphere3(0, 0.5, 0.7, 20);
-    bardrix::material MaterialCube(0, 0.5, 0.7, 20);
-    MaterialSphere1.color = bardrix::color::red();
-    MaterialSphere2.color = bardrix::color::blue();
-    MaterialSphere3.color = bardrix::color::white();
-    MaterialCube.color = bardrix::color::green();
-    sphere_obj1.set_material(MaterialSphere1);
-    sphere_obj2.set_material(MaterialSphere2);
-    sphere_obj3.set_material(MaterialSphere3);
-    cube2.set_material(MaterialCube);
-    // Light
-    bardrix::point3 position(2, 5, 2);
-    bardrix::color color = bardrix::color::red();
-    double intensity = 10.0;
-    //bardrix::light light(position, intensity, color);
-    bardrix::point3 position2(1, 1, 5);
-    bardrix::color color2 = bardrix::color::magenta();
-    double intensity2 = 4.0;
-    //bardrix::light light2(position2, intensity2, color2);
-    //threadVec.emplace_back([&light, &window] { tickFunc(light, window); });//Set light obj in tick func
-    shapes.emplace_back(std::make_unique<sphere>(sphere_obj1));
-    shapes.emplace_back(std::make_unique<sphere>(sphere_obj2));
-    shapes.emplace_back(std::make_unique<sphere>(sphere_obj3));
-    shapes.emplace_back(std::make_unique<cube>(cube2));//Create cube
-    // Create initial lights
-    add_light(lights, bardrix::color::red(), 3.0,bardrix::point3(2,0,-1));
-    add_light(lights, bardrix::color::magenta(), 4.0,bardrix::point3(1,2,-1));
-    
-    
-    window.on_paint = [&camera, &shapes, &lights](bardrix::window* window, std::vector<uint32_t>& buffer) {
+    //Paint eventlistener
+    window.on_paint = [&fancy_world](bardrix::window* window, std::vector<uint32_t>& buffer) {
         
         // Draw the scene
         for (int y = 0; y < window->get_height(); y++) {
             for (int x = 0; x < window->get_width(); x++) {
-                bardrix::ray ray = *camera.shoot_ray(x, y, 10);
+                bardrix::ray ray = *fancy_world.getCamera().shoot_ray(x, y, 10);
                 bardrix::color color = bardrix::color::black();
 
                 // Variables to keep track of the closest intersection point and object
-                
                 std::optional<bardrix::point3> closest_intersection;
                 const bardrix::shape* closest_object = nullptr;//Sphere obj
             
@@ -171,10 +166,10 @@ int main() {
                 //const cube* closest_cube = nullptr;
 
                 // Iterate over all objects to find the closest intersection
-                for (const auto& obj : shapes) {
+                for (const auto& obj : fancy_world.getObjects()) {
                     std::optional<bardrix::point3> intersection = obj->intersection(ray);
                     if (intersection.has_value()) {
-                        double distance = calc_distance(camera.position, intersection.value());
+                        double distance = calc_distance(fancy_world.getCamera().position, intersection.value());
                         if (distance < closest_distance) {
                             closest_distance = distance;
                             closest_intersection = intersection;
@@ -188,67 +183,33 @@ int main() {
                     bardrix::point3 intersection_point = closest_intersection.value();
                     bardrix::vector3 normal = closest_object->normal_at(intersection_point);
                     
-                    for (bardrix::light& l : lights) {
-
-                        double projected_angle_intensity = calculate_light_intensity(*closest_object, l, camera, intersection_point);
+                    for (bardrix::light& l : fancy_world.getLights()) {
+                        double projected_angle_intensity = calculate_light_intensity(*closest_object, l, fancy_world.getCamera(), intersection_point);
                         color += l.color.blended(closest_object->get_material().color) * projected_angle_intensity;
                     }
                 }
 
-                //
-
-                //for (auto& cb : cubes) {
-                //    std::optional<bardrix::point3> intersec = cb.intersection(ray);
-                //    if (intersec.has_value()) {
-                //        double dist = calc_distance(camera.position, intersec.value());
-                //        if (dist < closest_distance) {
-                //            closest_distance = dist;
-                //            closest_intersection = intersec;
-                //            closest_cube = &cb;
-                //            
-                //        } 
-                //    }
-                //}
-                
-                //// If there is an intersection, calculate intensity based on the closest object
-                //if (closest_intersection.has_value() && closest_cube != nullptr) {
-                //    bardrix::point3 intersection_point = closest_intersection.value();
-                //    bardrix::vector3 normal = closest_cube->normal_at(intersection_point);
-
-                //    double projected_angle_intensity = 0.0;
-                //    for (const auto& cb : cubes) {
-                //        projected_angle_intensity += calculate_light_intensity(cb, lights[1], camera, intersection_point);
-                //    }
-
-                //    // Ensure intensity is capped at 1.0
-                //    projected_angle_intensity = min(projected_angle_intensity, 1.0);
-
-                //    color = closest_cube->get_material().color * projected_angle_intensity;
-                //}
-
-                //
-
                 buffer[y * window->get_width() + x] = color.argb(); // ARGB is the format used by Windows API
             }
         }};
-    window.on_keydown = [&camera](bardrix::window* window, WPARAM key) {
+    window.on_keydown = [&fancy_world](bardrix::window* window, WPARAM key) {
         switch (key)
         {
             // Case voor input A
         case 0x41:
-            camera.position.x += 0.1;
+            fancy_world.camera.position.x += 0.1;
             break;
             // Case input D
         case 0x44:
-            camera.position.x += 0.1;
+            fancy_world.camera.position.x += 0.1;
             break;
             // Case input S
         case 0x53:
-            camera.position.z -= 0.1;
+            fancy_world.camera.position.z -= 0.1;
             break;
             // Case input W
         case 0x57:
-            camera.position.z -= 0.1;
+            fancy_world.camera.position.z -= 0.1;
             break;
         default:
             break;
