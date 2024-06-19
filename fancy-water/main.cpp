@@ -201,7 +201,7 @@ int main() {
             break;
             // Case input D
         case 0x44:
-            fancy_world.camera.position.x += 0.1;
+            fancy_world.camera.position.x -= 0.1;
             break;
             // Case input S
         case 0x53:
@@ -209,7 +209,7 @@ int main() {
             break;
             // Case input W
         case 0x57:
-            fancy_world.camera.position.z -= 0.1;
+            fancy_world.camera.position.z += 0.1;
             break;
         default:
             break;

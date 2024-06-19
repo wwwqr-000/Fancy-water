@@ -1,6 +1,7 @@
 #include "cube.h"
 #include <optional>
 #include <algorithm>
+#include <bardrix/objects.h>
 
 cube::cube() : cube(1.0, bardrix::point3(0, 0, 0)) {}
 
@@ -23,6 +24,7 @@ bardrix::vector3 cube::normal_at(const bardrix::point3& intersection) const {
 }
 
 std::optional<bardrix::point3> cube::intersection(const bardrix::ray& ray) const {
+
     // Get direction of the ray
     bardrix::vector3 direction = ray.get_direction();
 
@@ -41,6 +43,8 @@ std::optional<bardrix::point3> cube::intersection(const bardrix::ray& ray) const
     // vec.dot(vec) == |vec|^2
     const double distance_squared = ray_to_sphere_vector.dot(ray_to_sphere_vector);
 
+    double radius_ = 0.1;
+
     // Radius^2
     const double radius_squared = radius_ * radius_;
 
@@ -51,6 +55,8 @@ std::optional<bardrix::point3> cube::intersection(const bardrix::ray& ray) const
     const double distance = dot - std::sqrt(radius_squared - distance_squared);
 
     // If we intersect sphere return the length
+
+
     return (distance < ray.get_length() && distance > 0)
            ? std::optional(ray.position + ray.get_direction() * distance)
            : std::nullopt;
