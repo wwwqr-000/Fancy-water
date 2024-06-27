@@ -3,13 +3,13 @@
 #include <algorithm>
 #include <bardrix/objects.h>
 
-cube::cube() : cube(1.0, bardrix::point3(0, 0, 0)) {}
+cube::cube() : cube(bardrix::point3(1.0, 1.0, 1.0), bardrix::point3(0, 0, 0)) {}
 
-cube::cube(double radius) : cube(radius, bardrix::point3(0, 0, 0)) {}
+cube::cube(const bardrix::point3& dimention) : cube(dimention, bardrix::point3(0, 0, 0)) {}
 
-cube::cube(double radius, const bardrix::point3& position) : cube(radius, position, bardrix::material()) {}
+cube::cube(const bardrix::point3& dimention, const bardrix::point3& position) : cube(dimention, position, bardrix::material()) {}
 
-cube::cube(double radius, const bardrix::point3& position, const bardrix::material& material) : radius_(radius), position_(position), material_(material) {}
+cube::cube(const bardrix::point3& dimention, const bardrix::point3& position, const bardrix::material& material) : dimention(dimention), position_(position), material_(material) {}
 
 void cube::set_material(const bardrix::material& material) { this->material_ = material; }
 
@@ -24,42 +24,42 @@ bardrix::vector3 cube::normal_at(const bardrix::point3& intersection) const {
 }
 
 std::optional<bardrix::point3> cube::intersection(const bardrix::ray& ray) const {
+    const bardrix::vector3& direction = ray.get_direction();
+    bardrix::vector3 dir_inv = { 1.0f / direction.x, 1.0f / direction.y, 1.0f / direction.z };//Inverted direction of the ray
+    float tmin = 0.0f, tmax = std::numeric_limits<float>::infinity();
+    //Get longest line in cube. (Diagonal-based)
+    bardrix::point3 min_corner = position_ - dimention * 0.5;
+    bardrix::point3 max_corner = position_ + dimention * 0.5;
+    //
 
-    // Get direction of the ray
-    bardrix::vector3 direction = ray.get_direction();
+    double origin[3] = { ray.position.x, ray.position.y, ray.position.z };
+    //Calc nearest and farthest intersection
+    double min[3] = { min_corner.x, min_corner.y, min_corner.z };
+    double max[3] = { max_corner.x, max_corner.y, max_corner.z };
+    //
 
-    // Gets vector from points: ray origin and sphere center
-    bardrix::vector3 ray_to_sphere_vector = ray.position.vector_to(position_);
+    for (int d = 0; d < 3; ++d) {//Quick dot-product based check for intersection.
+        float t1 = (min[d] - origin[d]) * (d == 0 ? dir_inv.x : (d == 1 ? dir_inv.y : dir_inv.z));
+        float t2 = (max[d] - origin[d]) * (d == 0 ? dir_inv.x : (d == 1 ? dir_inv.y : dir_inv.z));
 
-    // Get dot product of origin-center-vector and normalized direction
-    const double dot = ray_to_sphere_vector.dot(direction);
+        if (t1 > t2) std::swap(t1, t2);
 
-    // Turn unit vector direction into a vector direction
-    direction *= dot;
+        tmin = std::max(tmin, t1);
+        tmax = std::min(tmax, t2);
 
-    // Length from ray origin to sphere center
-    ray_to_sphere_vector = direction - ray_to_sphere_vector;
+        if (tmin > tmax) {
+            return std::nullopt;
+        }
+    }
 
-    // vec.dot(vec) == |vec|^2
-    const double distance_squared = ray_to_sphere_vector.dot(ray_to_sphere_vector);
+    float t_distance = tmin;
 
-    double radius_ = 0.1;
-
-    // Radius^2
-    const double radius_squared = radius_ * radius_;
-
-    if (distance_squared > radius_squared)
-        return std::nullopt; // A smart way to check if ray intersects before taking the sqrt
-
-    // Calculate distance to intersection
-    const double distance = dot - std::sqrt(radius_squared - distance_squared);
-
-    // If we intersect sphere return the length
-
-
-    return (distance < ray.get_length() && distance > 0)
-           ? std::optional(ray.position + ray.get_direction() * distance)
-           : std::nullopt;
+    //Calc intersection point
+    bardrix::point3 intersection_point = {
+        ray.position.x + direction.x * t_distance,
+        ray.position.y + direction.y * t_distance,
+        ray.position.z + direction.z * t_distance
+    };
+    //
+    return (t_distance < ray.get_length() && t_distance > 0) ? std::optional<bardrix::point3>{ intersection_point } : std::nullopt;
 }
-
-

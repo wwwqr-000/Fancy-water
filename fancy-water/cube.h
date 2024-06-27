@@ -5,16 +5,16 @@
 class cube : public bardrix::shape {//Creating a test cube based on the sphere header
     protected:
 
-        double radius_;
+        bardrix::point3 dimention;
         bardrix::material material_;
         bardrix::point3 position_;
 
     public:
         cube();
-        explicit cube(double radius);
-        cube(double radius, const bardrix::point3& position);
+        explicit cube(const bardrix::point3 &dimention);
+        cube(const bardrix::point3& dimention, const bardrix::point3& position);
 
-        cube(double radius, const bardrix::point3& position, const bardrix::material& material);
+        cube(const bardrix::point3& dimention, const bardrix::point3& position, const bardrix::material& material);
 
         NODISCARD const bardrix::material& get_material() const override;
         NODISCARD const bardrix::point3& get_position() const override;

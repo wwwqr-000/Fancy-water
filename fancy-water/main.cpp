@@ -123,10 +123,10 @@ world createWorld(bardrix::camera &camera) {
 
     bardrix::light globalLight(bardrix::point3(-1, 0, 0), 4, bardrix::color::white());
     sphere s1(0.5, bardrix::point3(0.0, 0.0, 3.0));
-    cube c1(0.5, bardrix::point3(0.0, 1.0, 3.0));
+    cube c1(bardrix::point3(0.5, 0.5, 0.5), bardrix::point3(0.0, 1.0, 3.0));
 
     s1.set_material(materials("brick"));
-    c1.set_material(materials("iron"));
+    c1.set_material(materials("stone"));
 
     w.setCamera(camera);
     w.addLight(globalLight);
