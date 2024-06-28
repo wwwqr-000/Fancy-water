@@ -53,12 +53,12 @@ double calculate_light_intensity(const bardrix::shape& shape, const bardrix::lig
     // Angle between the normal and the light intersection vector
     const double angle = shape.normal_at(intersection_point).dot(light_intersection_vector);
 
-    if (angle < 0) // This means the light is behind the intersection_point
-    return 0;
+    if (angle < 0) // This means the light is behind the intersection_point or not visible
+        return 0; // Return 0 (black) if the light is not visible
 
     // Specular reflection
-    bardrix::vector3 reflection = bardrix::quaternion::mirror(light_intersection_vector,
-    shape.normal_at(intersection_point));
+    const bardrix::vector3 normal = shape.normal_at(intersection_point);
+    bardrix::vector3 reflection = light_intersection_vector - 2 * (light_intersection_vector.dot(normal)) * normal;
     double specular_angle = reflection.dot(camera.position.vector_to(intersection_point).normalized());
     double specular = std::pow(specular_angle, shape.get_material().get_shininess());
 
@@ -68,6 +68,7 @@ double calculate_light_intensity(const bardrix::shape& shape, const bardrix::lig
     intensity += shape.get_material().get_specular() * specular;
 
     // Max intensity is 1
+    //std::cout << intensity << "\n";
     return min(1.0, intensity * light.inverse_square_law(intersection_point));
 }
 
@@ -78,7 +79,7 @@ double calc_distance(const bardrix::point3& p1, const bardrix::point3& p2) {
 //Materials we use in our world
 bardrix::material materials(std::string name) {
     if (name == "iron") {
-        bardrix::material iron(0.0, 0.2, 0.9, 20.0);
+        bardrix::material iron(0, 0.5, 0.7, 20);
         iron.color = bardrix::color(233, 233, 233, 255);
         return iron;
     }
@@ -119,14 +120,14 @@ bardrix::material materials(std::string name) {
 }
 
 world createWorld(bardrix::camera &camera) {
-    world w("Fancy Water", bardrix::point3(10.0, 10.0, 10.0), false, false);//Open-world with volume 10x10x10 without a sun.
+    world w("Fancy Water", bardrix::point3(10.0, 10.0, 10.0), false, false, 10);//Open-world with volume 10x10x10 without a sun. (renderDistance=10)
 
-    bardrix::light globalLight(bardrix::point3(-1, 0, 0), 4, bardrix::color::white());
+    bardrix::light globalLight(bardrix::point3(-1, 0, 0), 12, bardrix::color::white());
     sphere s1(0.5, bardrix::point3(0.0, 0.0, 3.0));
     cube c1(bardrix::point3(0.5, 0.5, 0.5), bardrix::point3(0.0, 1.0, 3.0));
 
-    s1.set_material(materials("brick"));
-    c1.set_material(materials("stone"));
+    s1.set_material(materials("iron"));
+    c1.set_material(materials("iron"));
 
     w.setCamera(camera);
     w.addLight(globalLight);
@@ -137,8 +138,8 @@ world createWorld(bardrix::camera &camera) {
 }
 
 int main() {
-    int width = 600;
-    int height = 600;
+    int width = 800;
+    int height = 800;
 
     //Create window
     bardrix::window window("fancy-water", width, height);
@@ -155,7 +156,7 @@ int main() {
         // Draw the scene
         for (int y = 0; y < window->get_height(); y++) {
             for (int x = 0; x < window->get_width(); x++) {
-                bardrix::ray ray = *fancy_world.getCamera().shoot_ray(x, y, 10);
+                bardrix::ray ray = *fancy_world.getCamera().shoot_ray(x, y, fancy_world.getRenderDistance());
                 bardrix::color color = bardrix::color::black();
 
                 // Variables to keep track of the closest intersection point and object

@@ -20,8 +20,27 @@ void cube::set_position(const bardrix::point3& position) { this->position_ = pos
 const bardrix::point3& cube::get_position() const { return position_; }
 
 bardrix::vector3 cube::normal_at(const bardrix::point3& intersection) const {
-    return position_.vector_to(intersection).normalized();
+    bardrix::point3 corner = dimention * 0.5;
+    bardrix::point3 min_corner = position_ - corner;
+    bardrix::point3 max_corner = position_ + corner;
+
+    double dx_min = std::abs(intersection.x - min_corner.x);
+    double dx_max = std::abs(intersection.x - max_corner.x);
+    double dy_min = std::abs(intersection.y - min_corner.y);
+    double dy_max = std::abs(intersection.y - max_corner.y);
+    double dz_min = std::abs(intersection.z - min_corner.z);
+    double dz_max = std::abs(intersection.z - max_corner.z);
+
+    double min_distance = std::min({ dx_min, dx_max, dy_min, dy_max, dz_min, dz_max });
+
+    if (min_distance == dx_min) return bardrix::vector3(-1, 0, 0);
+    if (min_distance == dx_max) return bardrix::vector3(1, 0, 0);
+    if (min_distance == dy_min) return bardrix::vector3(0, -1, 0);
+    if (min_distance == dy_max) return bardrix::vector3(0, 1, 0);
+    if (min_distance == dz_min) return bardrix::vector3(0, 0, -1);
+    return bardrix::vector3(0, 0, 1);
 }
+
 
 std::optional<bardrix::point3> cube::intersection(const bardrix::ray& ray) const {
     bardrix::vector3 dir_inv = { 1.0f / ray.get_direction().x, 1.0f / ray.get_direction().y, 1.0f / ray.get_direction().z };//Inverted ray direction
