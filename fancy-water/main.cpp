@@ -132,23 +132,33 @@ bardrix::material materials(std::string name) {
 world createWorld(bardrix::camera &camera) {
     world w("Fancy Water", bardrix::point3(10.0, 10.0, 10.0), false, false, 10);//Open-world with volume 10x10x10 without a sun. (renderDistance=10)
 
-    bardrix::light globalLight(bardrix::point3(-1, 0, 0), 12, bardrix::color::white());
+    bardrix::light globalLight(bardrix::point3(-1, 10, 0), 50, bardrix::color::white());
     //sphere s1(0.5, bardrix::point3(0.0, 0.0, 3.0));
     cube c1(bardrix::point3(0.5, 0.5, 0.5), bardrix::point3(0.0, 1.0, 3.0));
-    cube floor(bardrix::point3(10.0, 0.1, 10.0), bardrix::point3(0.0, 0.1, 3.0));
+    cube floor(bardrix::point3(10.0, 0.1, 10.0), bardrix::point3(0.0, 0.0, 0.0));
     //cube water(bardrix::point3(0.5, 0.5, 0.5), bardrix::point3(0.0, 1.0, 3.0));
 
+    //House
+    std::vector<cube> structure_1;
+    cube c_1(bardrix::point3(1.0, 1.0, 1.0), bardrix::point3(0.0, 1.0, 0.0));
+    c_1.set_material(materials("brick"));
+    structure_1.emplace_back(c_1);
+
     //s1.set_material(materials("iron"));
-    c1.set_material(materials("water"));
+    c1.set_material(materials("stone"));
     floor.set_material(materials("iron"));
     //water.set_material(materials("water"));
 
     w.setCamera(camera);
     w.addLight(globalLight);
     //w.addObject(std::make_unique<sphere>(s1));
-    w.addObject(std::make_unique<cube>(c1));
+    //w.addObject(std::make_unique<cube>(c1));
     w.addObject(std::make_unique<cube>(floor));
     //w.addObject(std::make_unique<cube>(water));
+
+    for (auto& obj : structure_1) {
+        w.addObject(std::make_unique<cube>(obj));
+    }
 
     return w;
 }
@@ -161,7 +171,7 @@ int main() {
     bardrix::window window("fancy-water", width, height);
 
     // Create a camera
-    bardrix::camera camera = bardrix::camera({ -1,0,0 }, { 0,0,1 }, width, height, 60);
+    bardrix::camera camera = bardrix::camera({ -1,2,0 }, { 0,0,1 }, width, height, 60);
 
     //Create a world object
     world fancy_world = createWorld(camera);
@@ -214,7 +224,7 @@ int main() {
         
         };
     window.on_keydown = [&fancy_world](bardrix::window* window, WPARAM key) {
-        std::cout << key;
+        //std::cout << key;//Key logger 
         switch (key) {
             case 0x41: // A-toets
                 fancy_world.camera.position.x += 0.1;
@@ -243,7 +253,7 @@ int main() {
                 break;
             */
             case 37: //Linker pijl
-                std::cout << "test1\n";
+                //std::cout << "test1\n";
                 fancy_world.camera.rotate_yaw(-5);
                 break;
             case 38: //Boven
