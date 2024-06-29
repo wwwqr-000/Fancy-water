@@ -62,6 +62,9 @@ namespace bardrix {
         BITMAPINFO bmi_ = {};
 
     public:
+
+        HWND get_hwnd() { return this->hwnd_; }
+
         /// \brief Constructor for the window class.
         /// \param title The title of the window, if it's nullptr or empty, it will be converted to "Bardrix Window".
         /// \param width The width of the window, when negative, it will be converted to positive.

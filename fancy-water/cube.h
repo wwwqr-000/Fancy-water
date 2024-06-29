@@ -1,4 +1,5 @@
 #include <bardrix/objects.h>
+#include "point2.hpp"
 
 #pragma once
 
@@ -24,4 +25,8 @@ class cube : public bardrix::shape {//Creating a test cube based on the sphere h
         NODISCARD bardrix::vector3 normal_at(const bardrix::point3& intersection) const override;
 
         NODISCARD std::optional<bardrix::point3> intersection(const bardrix::ray& ray) const override;
+
+        //Get texture coordinates from intersection hit
+        NODISCARD point2 get_texture_coordinates(const bardrix::point3& intersection) const;
+        //
 };

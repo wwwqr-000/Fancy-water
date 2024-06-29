@@ -1,10 +1,13 @@
 //Includes
 #ifdef _WIN32
 
+#include "point2.hpp"
 #include "sphere.h"
 #include "window.h"
 #include "cube.h"
 #include "world.hpp"
+
+#include <cmath>
 #include <iostream>
 #include <thread>
 #include <vector>
@@ -15,6 +18,9 @@
 #include <bardrix/camera.h>
 #include <bardrix/color.h>
 
+// Undefine any macros that might conflict
+#undef min
+#undef max
 //For delta tick function
 #include <mutex>
 #include <cstdint>
@@ -27,6 +33,8 @@ bool running = true;//Used to determen the status of the tick thread
 
 //Vector for threads
 std::vector<std::thread> threadVec;
+std::vector<std::vector<bardrix::point3>> water_surface; // 2D-array om punten op het wateroppervlak te definiëren
+
 
 
 //Tick function to rotate a light object (Currently not used)
@@ -38,6 +46,10 @@ void tickFunc(bardrix::light &light, bardrix::window &window) {
         std::cout << (std::chrono::duration_cast<std::chrono::milliseconds> (std::chrono::system_clock::now() - start)).count() << "\n";
         std::this_thread::sleep_for(std::chrono::system_clock::now() - start + std::chrono::milliseconds(200));
     }
+}
+
+double calc_distance(const bardrix::point3& p1, const bardrix::point3& p2) {
+    return std::sqrt(pow(p2.x - p1.x, 2) + pow(p2.y - p1.y, 2) + pow(p2.z - p1.z, 2));
 }
 
 /*
@@ -69,12 +81,10 @@ double calculate_light_intensity(const bardrix::shape& shape, const bardrix::lig
 
     // Max intensity is 1
     //std::cout << intensity << "\n";
-    return min(1.0, intensity * light.inverse_square_law(intersection_point));
+    return std::min(1.0, intensity * light.inverse_square_law(intersection_point));
 }
 
-double calc_distance(const bardrix::point3& p1, const bardrix::point3& p2) {
-    return std::sqrt(pow(p2.x - p1.x, 2) + pow(p2.y - p1.y, 2) + pow(p2.z - p1.z, 2));
-}
+
 
 //Materials we use in our world
 bardrix::material materials(std::string name) {
@@ -85,7 +95,7 @@ bardrix::material materials(std::string name) {
     }
     else if (name == "water") {
         bardrix::material water(0.0, 1.0, 1.0, 10.0);
-        water.color = bardrix::color(30, 0, 255, 255);
+        water.color = bardrix::color(0, 16, 255, 255);
         return water;
     }
     else if (name == "lava") {
@@ -123,16 +133,22 @@ world createWorld(bardrix::camera &camera) {
     world w("Fancy Water", bardrix::point3(10.0, 10.0, 10.0), false, false, 10);//Open-world with volume 10x10x10 without a sun. (renderDistance=10)
 
     bardrix::light globalLight(bardrix::point3(-1, 0, 0), 12, bardrix::color::white());
-    sphere s1(0.5, bardrix::point3(0.0, 0.0, 3.0));
+    //sphere s1(0.5, bardrix::point3(0.0, 0.0, 3.0));
     cube c1(bardrix::point3(0.5, 0.5, 0.5), bardrix::point3(0.0, 1.0, 3.0));
+    cube floor(bardrix::point3(10.0, 0.1, 10.0), bardrix::point3(0.0, 0.1, 3.0));
+    //cube water(bardrix::point3(0.5, 0.5, 0.5), bardrix::point3(0.0, 1.0, 3.0));
 
-    s1.set_material(materials("iron"));
-    c1.set_material(materials("iron"));
+    //s1.set_material(materials("iron"));
+    c1.set_material(materials("water"));
+    floor.set_material(materials("iron"));
+    //water.set_material(materials("water"));
 
     w.setCamera(camera);
     w.addLight(globalLight);
-    w.addObject(std::make_unique<sphere>(s1));
+    //w.addObject(std::make_unique<sphere>(s1));
     w.addObject(std::make_unique<cube>(c1));
+    w.addObject(std::make_unique<cube>(floor));
+    //w.addObject(std::make_unique<cube>(water));
 
     return w;
 }
@@ -149,7 +165,7 @@ int main() {
 
     //Create a world object
     world fancy_world = createWorld(camera);
-    
+
     //Paint eventlistener
     window.on_paint = [&fancy_world](bardrix::window* window, std::vector<uint32_t>& buffer) {
         
@@ -158,7 +174,7 @@ int main() {
             for (int x = 0; x < window->get_width(); x++) {
                 bardrix::ray ray = *fancy_world.getCamera().shoot_ray(x, y, fancy_world.getRenderDistance());
                 bardrix::color color = bardrix::color::black();
-
+                //water.render(buffer, 20, 20);
                 // Variables to keep track of the closest intersection point and object
                 std::optional<bardrix::point3> closest_intersection;
                 const bardrix::shape* closest_object = nullptr;//Sphere obj
@@ -179,8 +195,10 @@ int main() {
                     }
                 }
 
-                // If there is an intersection, calculate intensity based on the closest object
+                // If there is an intersection, calculate intensity based on the closest object (Create texture)
                 if (closest_intersection.has_value() && closest_object != nullptr) {
+                    //Cout the coords of intersecion
+                    //std::cout << closest_object.
                     bardrix::point3 intersection_point = closest_intersection.value();
                     bardrix::vector3 normal = closest_object->normal_at(intersection_point);
                     
@@ -192,31 +210,55 @@ int main() {
 
                 buffer[y * window->get_width() + x] = color.argb(); // ARGB is the format used by Windows API
             }
-        }};
+        }
+        
+        };
     window.on_keydown = [&fancy_world](bardrix::window* window, WPARAM key) {
-        switch (key)
-        {
-            // Case voor input A
-        case 0x41:
-            fancy_world.camera.position.x += 0.1;
-            break;
-            // Case input D
-        case 0x44:
-            fancy_world.camera.position.x -= 0.1;
-            break;
-            // Case input S
-        case 0x53:
-            fancy_world.camera.position.z -= 0.1;
-            break;
-            // Case input W
-        case 0x57:
-            fancy_world.camera.position.z += 0.1;
-            break;
-        default:
+        std::cout << key;
+        switch (key) {
+            case 0x41: // A-toets
+                fancy_world.camera.position.x += 0.1;
+                break;
+            case 0x53: // S-toets
+                fancy_world.camera.position.y -= 0.1;
+                break;
+            case 0x44: // D-toets
+                fancy_world.camera.position.x -= 0.1;
+                break;
+            case 0x57: // W-toets
+                fancy_world.camera.position.y += 0.1;
+                break;
+            case 0x51: // Q-toets
+                fancy_world.camera.position.z -= 0.1;
+                break;
+            case 0x45: // E-toets
+                fancy_world.camera.position.z += 0.1;
+                break;
+            /*
+            case 13: //Enter
+                std::cout << "13???";
+                cube newCube(bardrix::point3(0.5, 0.5, 0.5), bardrix::point3(0.0, 1.0, 3.0));
+                newCube.set_material(materials("water")); // Example material, change as needed
+                fancy_world.addObject(std::make_unique<cube>(newCube));
+                break;
+            */
+            case 37: //Linker pijl
+                std::cout << "test1\n";
+                fancy_world.camera.rotate_yaw(-5);
+                break;
+            case 38: //Boven
+                fancy_world.camera.rotate_pitch(-5);
+                break;
+            case 39: //Rechts
+                fancy_world.camera.rotate_yaw(5);
+                break;    
+            case 40: //Beneden toets
+                fancy_world.camera.rotate_pitch(5);
+                break;
             break;
         }
         window->redraw();
-        };
+    };
 
     window.on_resize = [&camera](bardrix::window* window, int width, int height) {
         // Resize the camera
@@ -225,6 +267,8 @@ int main() {
 
         window->redraw(); // Redraw the window (calls on_paint)
         };
+
+    
 
     // Get width and height of the screen
     int screen_width = GetSystemMetrics(SM_CXSCREEN);

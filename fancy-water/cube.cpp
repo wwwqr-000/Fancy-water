@@ -1,4 +1,5 @@
 #include "cube.h"
+#include "point2.hpp"
 #include <optional>
 #include <algorithm>
 #include <bardrix/objects.h>
@@ -33,12 +34,14 @@ bardrix::vector3 cube::normal_at(const bardrix::point3& intersection) const {
 
     double min_distance = std::min({ dx_min, dx_max, dy_min, dy_max, dz_min, dz_max });
 
-    if (min_distance == dx_min) return bardrix::vector3(-1, 0, 0);
-    if (min_distance == dx_max) return bardrix::vector3(1, 0, 0);
-    if (min_distance == dy_min) return bardrix::vector3(0, -1, 0);
-    if (min_distance == dy_max) return bardrix::vector3(0, 1, 0);
-    if (min_distance == dz_min) return bardrix::vector3(0, 0, -1);
-    return bardrix::vector3(0, 0, 1);
+    if (min_distance == dx_min) return bardrix::vector3(-1, 0, 0);   // Left face
+    if (min_distance == dx_max) return bardrix::vector3(1, 0, 0);    // Right face
+    if (min_distance == dy_min) return bardrix::vector3(0, -1, 0);   // Bottom face
+    if (min_distance == dy_max) return bardrix::vector3(0, 1, 0);    // Top face
+    if (min_distance == dz_min) return bardrix::vector3(0, 0, -1);   // Back face
+    if (min_distance == dz_max) return bardrix::vector3(0, 0, 1);    // Front face
+
+    return bardrix::vector3(0, 0, 0);  // Default case (should never happen for a well-formed cube)
 }
 
 
@@ -76,4 +79,24 @@ std::optional<bardrix::point3> cube::intersection(const bardrix::ray& ray) const
     return (tmin < tmax && tmin < ray.get_length() && tmin > 0)
         ? std::optional<bardrix::point3>{{ray.position.x + ray.get_direction().x * tmin, ray.position.y + ray.get_direction().y * tmin, ray.position.z + ray.get_direction().z * tmin}}
         : std::nullopt;
+}
+
+point2 cube::get_texture_coordinates(const bardrix::point3& intersection) const {
+    bardrix::vector3 normal = normal_at(intersection);
+    point2 uv;
+
+    if (normal.x == 1 || normal.x == -1) {
+        uv.x = (intersection.z - (position_.z - dimention.z * 0.5)) / dimention.z;
+        uv.y = (intersection.y - (position_.y - dimention.y * 0.5)) / dimention.y;
+    }
+    else if (normal.y == 1 || normal.y == -1) {
+        uv.x = (intersection.x - (position_.x - dimention.x * 0.5)) / dimention.x;
+        uv.y = (intersection.z - (position_.z - dimention.z * 0.5)) / dimention.z;
+    }
+    else if (normal.z == 1 || normal.z == -1) {
+        uv.x = (intersection.x - (position_.x - dimention.x * 0.5)) / dimention.x;
+        uv.y = (intersection.y - (position_.y - dimention.y * 0.5)) / dimention.y;
+    }
+
+    return uv;
 }
