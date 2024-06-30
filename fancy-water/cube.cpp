@@ -1,3 +1,4 @@
+#pragma once
 #include "cube.h"
 #include "point2.hpp"
 #include <optional>
@@ -6,11 +7,13 @@
 
 cube::cube() : cube(bardrix::point3(1.0, 1.0, 1.0), bardrix::point3(0, 0, 0)) {}
 
-cube::cube(const bardrix::point3& dimention) : cube(dimention, bardrix::point3(0, 0, 0)) {}
+cube::cube(const bardrix::point3& dimension) : cube(dimension, bardrix::point3(0, 0, 0)) {}
 
-cube::cube(const bardrix::point3& dimention, const bardrix::point3& position) : cube(dimention, position, bardrix::material()) {}
+cube::cube(const bardrix::point3& dimension, const bardrix::point3& position) : cube(dimension, position, bardrix::material()) {}
 
-cube::cube(const bardrix::point3& dimention, const bardrix::point3& position, const bardrix::material& material) : dimention(dimention), position_(position), material_(material) {}
+cube::cube(const bardrix::point3& dimension, const bardrix::point3& position, const bardrix::material& material) : dimension(dimension), position_(position), material_(material) {}
+
+cube::cube(const bardrix::point3& dimension, const bardrix::point3& position, const bardrix::material& material, const std::string type) : dimension(dimension), position_(position), material_(material), type(type) {}
 
 void cube::set_material(const bardrix::material& material) { this->material_ = material; }
 
@@ -21,7 +24,7 @@ void cube::set_position(const bardrix::point3& position) { this->position_ = pos
 const bardrix::point3& cube::get_position() const { return position_; }
 
 bardrix::vector3 cube::normal_at(const bardrix::point3& intersection) const {
-    bardrix::point3 corner = dimention * 0.5;
+    bardrix::point3 corner = dimension * 0.5;
     bardrix::point3 min_corner = position_ - corner;
     bardrix::point3 max_corner = position_ + corner;
 
@@ -34,14 +37,14 @@ bardrix::vector3 cube::normal_at(const bardrix::point3& intersection) const {
 
     double min_distance = std::min({ dx_min, dx_max, dy_min, dy_max, dz_min, dz_max });
 
-    if (min_distance == dx_min) return bardrix::vector3(-1, 0, 0);   // Left face
-    if (min_distance == dx_max) return bardrix::vector3(1, 0, 0);    // Right face
-    if (min_distance == dy_min) return bardrix::vector3(0, -1, 0);   // Bottom face
-    if (min_distance == dy_max) return bardrix::vector3(0, 1, 0);    // Top face
-    if (min_distance == dz_min) return bardrix::vector3(0, 0, -1);   // Back face
-    if (min_distance == dz_max) return bardrix::vector3(0, 0, 1);    // Front face
+    if (min_distance == dx_min) return bardrix::vector3(-1, 0, 0);//Left face
+    if (min_distance == dx_max) return bardrix::vector3(1, 0, 0);//Right face
+    if (min_distance == dy_min) return bardrix::vector3(0, -1, 0);//Bottom face
+    if (min_distance == dy_max) return bardrix::vector3(0, 1, 0);//Top face
+    if (min_distance == dz_min) return bardrix::vector3(0, 0, -1);//Back face
+    if (min_distance == dz_max) return bardrix::vector3(0, 0, 1);//Front face
 
-    return bardrix::vector3(0, 0, 0);  // Default case (should never happen for a well-formed cube)
+    return bardrix::vector3(0, 0, 0);
 }
 
 
@@ -50,7 +53,7 @@ std::optional<bardrix::point3> cube::intersection(const bardrix::ray& ray) const
     float tmin = 0.0f, tmax = std::numeric_limits<float>::infinity();
 
     //Get longest vertex (diagonal-based)
-    bardrix::point3 corner(dimention.x * 0.5, dimention.y * 0.5, dimention.z * 0.5);
+    bardrix::point3 corner(dimension.x * 0.5, dimension.y * 0.5, dimension.z * 0.5);
     bardrix::point3 min_corner = position_ - corner;
     bardrix::point3 max_corner = position_ + corner;
     //
@@ -81,22 +84,36 @@ std::optional<bardrix::point3> cube::intersection(const bardrix::ray& ray) const
         : std::nullopt;
 }
 
-point2 cube::get_texture_coordinates(const bardrix::point3& intersection) const {
+//Cube texture coordinate getter based on intersection.
+point2 cube::getCubeIntersectionCoords(const bardrix::point3& intersection) const {
     bardrix::vector3 normal = normal_at(intersection);
     point2 uv;
 
-    if (normal.x == 1 || normal.x == -1) {
-        uv.x = (intersection.z - (position_.z - dimention.z * 0.5)) / dimention.z;
-        uv.y = (intersection.y - (position_.y - dimention.y * 0.5)) / dimention.y;
+    if (normal.z == 1 || normal.z == -1) {//front or back face
+        uv.x = static_cast<int>((intersection.x + 0.5) * 16);
+        uv.y = static_cast<int>((intersection.y + 0.5) * 16);
+        (normal.z == 1) ? uv.face = "front" : uv.face = "back";
     }
-    else if (normal.y == 1 || normal.y == -1) {
-        uv.x = (intersection.x - (position_.x - dimention.x * 0.5)) / dimention.x;
-        uv.y = (intersection.z - (position_.z - dimention.z * 0.5)) / dimention.z;
+    else if (normal.x == 1 || normal.x == -1) {//right or left face
+        uv.x = static_cast<int>((intersection.z + 0.5) * 16);
+        uv.y = static_cast<int>((intersection.y + 0.5) * 16);
+        (normal.x == 1) ? uv.face = "right" : uv.face = "left";
     }
-    else if (normal.z == 1 || normal.z == -1) {
-        uv.x = (intersection.x - (position_.x - dimention.x * 0.5)) / dimention.x;
-        uv.y = (intersection.y - (position_.y - dimention.y * 0.5)) / dimention.y;
+    else if (normal.y == 1 || normal.y == -1) {//top or bottom face
+        uv.x = static_cast<int>((intersection.x + 0.5) * 16);
+        uv.y = static_cast<int>((intersection.z + 0.5) * 16);
+        (normal.y == 1) ? uv.face = "top" : uv.face = "bottom";
+    }
+
+    if (uv.x > 16 || uv.y > 16) {
+        uv.x = 0.0;
+        uv.y = 0.0;
     }
 
     return uv;
 }
+//
+
+//Get texture path from this cube
+std::string cube::getType() const { return type; }
+//

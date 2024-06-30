@@ -6,6 +6,7 @@
 #include "window.h"
 #include "cube.h"
 #include "world.hpp"
+#include "betterTexture.hpp"
 
 #include <cmath>
 #include <iostream>
@@ -132,29 +133,21 @@ bardrix::material materials(std::string name) {
 world createWorld(bardrix::camera &camera) {
     world w("Fancy Water", bardrix::point3(10.0, 10.0, 10.0), false, false, 10);//Open-world with volume 10x10x10 without a sun. (renderDistance=10)
 
-    bardrix::light globalLight(bardrix::point3(-1, 10, 0), 50, bardrix::color::white());
-    //sphere s1(0.5, bardrix::point3(0.0, 0.0, 3.0));
-    cube c1(bardrix::point3(0.5, 0.5, 0.5), bardrix::point3(0.0, 1.0, 3.0));
+    bardrix::light globalLight(bardrix::point3(-1, 10, 0), 40, bardrix::color::white());
     cube floor(bardrix::point3(10.0, 0.1, 10.0), bardrix::point3(0.0, 0.0, 0.0));
-    //cube water(bardrix::point3(0.5, 0.5, 0.5), bardrix::point3(0.0, 1.0, 3.0));
 
-    //House
+    //Test structure
     std::vector<cube> structure_1;
-    cube c_1(bardrix::point3(1.0, 1.0, 1.0), bardrix::point3(0.0, 1.0, 0.0));
-    c_1.set_material(materials("brick"));
+    //Size, Pos, Material, Type (name)
+    cube c_1(bardrix::point3(1.0, 1.0, 1.0), bardrix::point3(0.0, 1.0, 0.0), materials("iron"), "grass_block");
     structure_1.emplace_back(c_1);
+    //
 
-    //s1.set_material(materials("iron"));
-    c1.set_material(materials("stone"));
     floor.set_material(materials("iron"));
-    //water.set_material(materials("water"));
 
     w.setCamera(camera);
     w.addLight(globalLight);
-    //w.addObject(std::make_unique<sphere>(s1));
-    //w.addObject(std::make_unique<cube>(c1));
     w.addObject(std::make_unique<cube>(floor));
-    //w.addObject(std::make_unique<cube>(water));
 
     for (auto& obj : structure_1) {
         w.addObject(std::make_unique<cube>(obj));
@@ -163,7 +156,32 @@ world createWorld(bardrix::camera &camera) {
     return w;
 }
 
+void faceTheFaces(betterTexture& texture_mask, std::string& texture_loc, std::string& type, point2& pixelCoord) {//Used
+    if (type == "iron_block") {
+        texture_mask.setBMP(texture_loc + "iron_block.bmp");
+    }
+    else if (type == "grass_block") {
+        if (pixelCoord.face == "top") {
+            texture_mask.setBMP(texture_loc + "grass_top.bmp");
+        }
+        else if (pixelCoord.face == "bottom") {
+            texture_mask.setBMP(texture_loc + "dirt.bmp");
+        }
+        else {
+            texture_mask.setBMP(texture_loc + "grass_block_side.bmp");
+        }
+    }
+    else {
+        texture_mask.setBMP(texture_loc + "missing.bmp");
+    }
+}
+
 int main() {
+    /*
+    betterTexture bt("../../../project_assets/textures/iron_block.bmp");
+    bardrix::point3 pixRgb = bt.getPixelValue(0, 0);
+    std::cout << "Pixel color:\nR:" << pixRgb.x << "\nG:" << pixRgb.y << "\nB:" << pixRgb.z << "\n";
+    */
     int width = 800;
     int height = 800;
 
@@ -171,7 +189,7 @@ int main() {
     bardrix::window window("fancy-water", width, height);
 
     // Create a camera
-    bardrix::camera camera = bardrix::camera({ -1,2,0 }, { 0,0,1 }, width, height, 60);
+    bardrix::camera camera = bardrix::camera({ -0.1,2.2,-2 }, { 0,0,1 }, width, height, 60);
 
     //Create a world object
     world fancy_world = createWorld(camera);
@@ -180,6 +198,8 @@ int main() {
     window.on_paint = [&fancy_world](bardrix::window* window, std::vector<uint32_t>& buffer) {
         
         // Draw the scene
+        std::string texture_loc = "../../../project_assets/textures/";
+        betterTexture texture_mask(texture_loc + "missing.bmp");
         for (int y = 0; y < window->get_height(); y++) {
             for (int x = 0; x < window->get_width(); x++) {
                 bardrix::ray ray = *fancy_world.getCamera().shoot_ray(x, y, fancy_world.getRenderDistance());
@@ -187,12 +207,12 @@ int main() {
                 //water.render(buffer, 20, 20);
                 // Variables to keep track of the closest intersection point and object
                 std::optional<bardrix::point3> closest_intersection;
-                const bardrix::shape* closest_object = nullptr;//Sphere obj
+                const bardrix::shape* closest_object = nullptr;
             
                 double closest_distance = std::numeric_limits<double>::infinity();
                 //const cube* closest_cube = nullptr;
 
-                // Iterate over all objects to find the closest intersection
+                //Iterate over all objects to find the closest intersection
                 for (const auto& obj : fancy_world.getObjects()) {
                     std::optional<bardrix::point3> intersection = obj->intersection(ray);
                     if (intersection.has_value()) {
@@ -205,24 +225,41 @@ int main() {
                     }
                 }
 
-                // If there is an intersection, calculate intensity based on the closest object (Create texture)
+                //If there is an intersection, calculate intensity based on the closest object
                 if (closest_intersection.has_value() && closest_object != nullptr) {
                     //Cout the coords of intersecion
                     //std::cout << closest_object.
                     bardrix::point3 intersection_point = closest_intersection.value();
                     bardrix::vector3 normal = closest_object->normal_at(intersection_point);
-                    
-                    for (bardrix::light& l : fancy_world.getLights()) {
-                        double projected_angle_intensity = calculate_light_intensity(*closest_object, l, fancy_world.getCamera(), intersection_point);
-                        color += l.color.blended(closest_object->get_material().color) * projected_angle_intensity;
+
+                    //Check if the current obj is a cube.
+                    const cube* closest_cube = dynamic_cast<const cube*>(closest_object);
+                    if (closest_cube) {
+                        //Get texture color based on pixel coordinate
+                        point2 pixelCoord = closest_cube->getCubeIntersectionCoords(closest_intersection.value());
+                        std::string top, bottom, front, back, left, right;
+                        faceTheFaces(texture_mask, texture_loc, closest_cube->getType(), pixelCoord);
+                        bardrix::point3 RGB = texture_mask.getPixelValue(pixelCoord.x, pixelCoord.y);
+                        texture_mask.setBMP(texture_loc + "missing.bmp");
+                        bardrix::color pColor(RGB.x, RGB.y, RGB.z, 255);
+                        //
+                        for (bardrix::light& l : fancy_world.getLights()) {
+                            double projected_angle_intensity = calculate_light_intensity(*closest_object, l, fancy_world.getCamera(), intersection_point);
+                            color += l.color.blended(pColor) * projected_angle_intensity;
+                        }
+                    }
+                    //
+                    else {
+                        for (bardrix::light& l : fancy_world.getLights()) {
+                            double projected_angle_intensity = calculate_light_intensity(*closest_object, l, fancy_world.getCamera(), intersection_point);
+                            color += l.color.blended(closest_object->get_material().color) * projected_angle_intensity;
+                        }
                     }
                 }
-
                 buffer[y * window->get_width() + x] = color.argb(); // ARGB is the format used by Windows API
             }
-        }
-        
-        };
+        }    
+    };
     window.on_keydown = [&fancy_world](bardrix::window* window, WPARAM key) {
         //std::cout << key;//Key logger 
         switch (key) {
@@ -244,6 +281,8 @@ int main() {
             case 0x45: // E-toets
                 fancy_world.camera.position.z += 0.1;
                 break;
+        }
+        std::cout << "x:" << fancy_world.camera.position.x << "\ny:" << fancy_world.camera.position.y << "\nz:" << fancy_world.camera.position.z << "\n";
             /*
             case 13: //Enter
                 std::cout << "13???";
@@ -252,6 +291,7 @@ int main() {
                 fancy_world.addObject(std::make_unique<cube>(newCube));
                 break;
             */
+            /*//This only works if the camera.h class did not get reloaded with CMake.
             case 37: //Linker pijl
                 //std::cout << "test1\n";
                 fancy_world.camera.rotate_yaw(-5);
@@ -266,7 +306,7 @@ int main() {
                 fancy_world.camera.rotate_pitch(5);
                 break;
             break;
-        }
+            */
         window->redraw();
     };
 

@@ -1,0 +1,5 @@
+Image format:
+BMP | 24-bit based
+
+General info:
+Each bmp is it's own face for a cube, a sphere has only one face.

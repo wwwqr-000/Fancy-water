@@ -1,5 +1,4 @@
 #pragma once
-
 #include <bardrix/light.h>
 #include <bardrix/camera.h>
 #include <bardrix/objects.h>
