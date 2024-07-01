@@ -90,7 +90,7 @@ double calculate_light_intensity(const bardrix::shape& shape, const bardrix::lig
 //Materials we use in our world
 bardrix::material materials(std::string name) {
     if (name == "iron") {
-        bardrix::material iron(0, 0.5, 0.7, 20);
+        bardrix::material iron(0.2, 0.5, 0.7, 20);
         iron.color = bardrix::color(233, 233, 233, 255);
         return iron;
     }
@@ -133,14 +133,16 @@ bardrix::material materials(std::string name) {
 world createWorld(bardrix::camera &camera) {
     world w("Fancy Water", bardrix::point3(10.0, 10.0, 10.0), false, false, 10);//Open-world with volume 10x10x10 without a sun. (renderDistance=10)
 
-    bardrix::light globalLight(bardrix::point3(-1, 10, 0), 40, bardrix::color::white());
+    bardrix::light globalLight(bardrix::point3(-0.1, 10.0, -4.3), 200, bardrix::color::white());
     cube floor(bardrix::point3(10.0, 0.1, 10.0), bardrix::point3(0.0, 0.0, 0.0));
 
     //Test structure
     std::vector<cube> structure_1;
     //Size, Pos, Material, Type (name)
-    cube c_1(bardrix::point3(1.0, 1.0, 1.0), bardrix::point3(0.0, 1.0, 0.0), materials("iron"), "grass_block");
+    cube c_1(bardrix::point3(1.0, 1.0, 1.0), bardrix::point3(0.0, 1.0, 0.0), materials("iron"), "iron_block");
+    cube c_2(bardrix::point3(1.0, 1.0, 1.0), bardrix::point3(-1.5, 1.0, 0.0), materials("iron"), "iron_block");
     structure_1.emplace_back(c_1);
+    structure_1.emplace_back(c_2);
     //
 
     floor.set_material(materials("iron"));
@@ -156,7 +158,7 @@ world createWorld(bardrix::camera &camera) {
     return w;
 }
 
-void faceTheFaces(betterTexture& texture_mask, std::string& texture_loc, std::string& type, point2& pixelCoord) {//Used
+void faceTheFaces(betterTexture& texture_mask, std::string& texture_loc, std::string& type, point2& pixelCoord) {//Used to give cube faces textures
     if (type == "iron_block") {
         texture_mask.setBMP(texture_loc + "iron_block.bmp");
     }
@@ -171,17 +173,9 @@ void faceTheFaces(betterTexture& texture_mask, std::string& texture_loc, std::st
             texture_mask.setBMP(texture_loc + "grass_block_side.bmp");
         }
     }
-    else {
-        texture_mask.setBMP(texture_loc + "missing.bmp");
-    }
 }
 
 int main() {
-    /*
-    betterTexture bt("../../../project_assets/textures/iron_block.bmp");
-    bardrix::point3 pixRgb = bt.getPixelValue(0, 0);
-    std::cout << "Pixel color:\nR:" << pixRgb.x << "\nG:" << pixRgb.y << "\nB:" << pixRgb.z << "\n";
-    */
     int width = 800;
     int height = 800;
 
@@ -189,7 +183,7 @@ int main() {
     bardrix::window window("fancy-water", width, height);
 
     // Create a camera
-    bardrix::camera camera = bardrix::camera({ -0.1,2.2,-2 }, { 0,0,1 }, width, height, 60);
+    bardrix::camera camera = bardrix::camera({ -0.1, 2.2, -4.6 }, { 0,0,1 }, width, height, 60);
 
     //Create a world object
     world fancy_world = createWorld(camera);
@@ -234,13 +228,12 @@ int main() {
 
                     //Check if the current obj is a cube.
                     const cube* closest_cube = dynamic_cast<const cube*>(closest_object);
-                    if (closest_cube) {
+                    if (closest_cube && closest_cube->getType() != "") {
                         //Get texture color based on pixel coordinate
                         point2 pixelCoord = closest_cube->getCubeIntersectionCoords(closest_intersection.value());
                         std::string top, bottom, front, back, left, right;
                         faceTheFaces(texture_mask, texture_loc, closest_cube->getType(), pixelCoord);
                         bardrix::point3 RGB = texture_mask.getPixelValue(pixelCoord.x, pixelCoord.y);
-                        texture_mask.setBMP(texture_loc + "missing.bmp");
                         bardrix::color pColor(RGB.x, RGB.y, RGB.z, 255);
                         //
                         for (bardrix::light& l : fancy_world.getLights()) {

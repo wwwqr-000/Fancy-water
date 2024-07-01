@@ -105,7 +105,7 @@ point2 cube::getCubeIntersectionCoords(const bardrix::point3& intersection) cons
         (normal.y == 1) ? uv.face = "top" : uv.face = "bottom";
     }
 
-    if (uv.x > 16 || uv.y > 16) {
+    if (uv.x > 16 || uv.y > 96) {
         uv.x = 0.0;
         uv.y = 0.0;
     }
