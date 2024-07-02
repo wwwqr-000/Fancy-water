@@ -19,6 +19,6 @@ jobs:
         run: |
           cd fancy-water-tests/github
           g++ main.cpp
-          chmod 0777 out.a
-          mv out.a exec
+          mv a.out exec
+          chmod 0777 exec
           ./exec
