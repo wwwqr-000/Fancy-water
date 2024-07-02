@@ -1,4 +1,4 @@
-#include <sphere.h>
+#include "../../fancy-water/sphere.h"
 
 TEST(sphere_test, intersection_test) {
     sphere sphere(1.0, bardrix::point3(0.0, 0.0, 3.0));
