@@ -15,20 +15,14 @@ jobs:
       - name: Installing external software
         run: |
           sudo apt-get update
-          sudo apt-get install -y g++ cmake libgtest-dev
+          sudo apt-get install -y cmake
 
       - name: Build and run tests
         run: |
-          #Google test setup
-          cd /usr/src/googletest/googletest
-          sudo cmake .
-          sudo make
-          #
-          cd $GITHUB_WORKSPACE/fancy-water-tests
-          g++ -x c++-header pch.h -o pch.h.gch
-          g++ -c pch.h
-          g++ -c test_main.cpp -o test_main.o
-          g++ -c tests/sphere_intersection.cpp -o sphere_intersection.o
-          g++ test_main.o sphere_intersection.o pch.o /usr/src/googletest/googletest/lib/libgtest.a /usr/src/googletest/googletest/lib/libgtest_main.a -pthread -o test_exec
-          chmod 0777 test_exec
-          ./test_exec
+          cd fancy-water-tests
+          mkdir test_build
+          cd test_build
+          cmake ..
+          cmake --build
+          ctest --output-on-failure
+
