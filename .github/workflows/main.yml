@@ -19,11 +19,10 @@ jobs:
 
       - name: Build and run tests
         run: |
-          # Build Google Test library
-          cd /usr/src/gtest
-          sudo cmake CMakeLists.txt
+          #Google test setup
+          cd /usr/src/googletest/googletest
+          sudo cmake .
           sudo make
-          sudo cp *.a /usr/lib
           #
           cd $GITHUB_WORKSPACE/fancy-water-tests
           g++ -x c++-header pch.h -o pch.h.gch
