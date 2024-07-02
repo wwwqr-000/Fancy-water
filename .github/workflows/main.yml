@@ -17,8 +17,8 @@ jobs:
 
       - name: Build and run executable
         run: |
-	    cd fancy-water-tests\github
-	    g++ main.cpp
-            chmod 0777 out.a
-            mv out.a exec
-            ./exec
+          cd fancy-water-tests/github
+          g++ main.cpp
+          chmod 0777 out.a
+          mv out.a exec
+          ./exec
