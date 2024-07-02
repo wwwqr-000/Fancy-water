@@ -14,6 +14,10 @@
 #include <vector>
 #include <future>
 #include <algorithm>
+#include <fstream>
+#include <string>
+#include <sstream>
+#include <utility>
 #include <bardrix/ray.h>
 #include <bardrix/light.h>
 #include <bardrix/camera.h>
@@ -135,6 +139,36 @@ bardrix::material materials(std::string name) {
     return not_found;
 }
 
+std::vector<std::string> explode(std::string const& s, char delim) {//Explode a string
+    std::vector<std::string> result;
+    std::istringstream iss(s);
+
+    for (std::string token; std::getline(iss, token, delim); ) {
+        result.push_back(std::move(token));
+    }
+
+    return result;
+}
+
+std::vector<cube> importStructure(std::string path) {//Create a cube vector based on raw text inside a .structure file
+    std::vector<cube> cubes;
+    std::ifstream structure(path);
+    std::string line;
+    while (std::getline(structure, line)) {
+        try {
+            std::vector<std::string> arr = explode(line, ',');
+            cube c(bardrix::point3(1.0, 1.0, 1.0), bardrix::point3(std::stod(arr[0]), std::stod(arr[1]), std::stod(arr[2])), materials("iron"), arr[3]);//W.I.P add block class
+            cubes.emplace_back(c);
+        }
+        catch (std::exception) {
+            std::cout << "Error reading structure at '" << path << "'\n";
+        }
+    }
+
+    structure.close();
+    return cubes;
+}
+
 world createWorld(bardrix::camera &camera) {
     world w("Fancy Water", bardrix::point3(10.0, 10.0, 10.0), false, false, 10);//Open-world with volume 10x10x10 without a sun. (renderDistance=10)
 
@@ -142,12 +176,9 @@ world createWorld(bardrix::camera &camera) {
     cube floor(bardrix::point3(10.0, 0.1, 10.0), bardrix::point3(0.0, 0.0, 0.0));
 
     //Test structure
-    std::vector<cube> structure_1;
-    //Size, Pos, Material, Type (name)
-    cube c_1(bardrix::point3(1.0, 1.0, 1.0), bardrix::point3(0.0, 1.0, 0.0), materials("iron"), "iron_block");
-    cube c_2(bardrix::point3(1.0, 1.0, 1.0), bardrix::point3(-1.0, 1.0, 0.0), materials("dirt"), "dirt");
-    structure_1.emplace_back(c_1);
-    structure_1.emplace_back(c_2);
+    for (auto& obj : importStructure("../../../project_assets/structures/house.structure")) {
+        w.addObject(std::make_unique<cube>(obj));
+    }
     //
 
     floor.set_material(materials("iron"));
@@ -155,10 +186,6 @@ world createWorld(bardrix::camera &camera) {
     w.setCamera(camera);
     w.addLight(globalLight);
     w.addObject(std::make_unique<cube>(floor));
-
-    for (auto& obj : structure_1) {
-        w.addObject(std::make_unique<cube>(obj));
-    }
 
     return w;
 }
