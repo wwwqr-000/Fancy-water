@@ -145,7 +145,7 @@ world createWorld(bardrix::camera &camera) {
     std::vector<cube> structure_1;
     //Size, Pos, Material, Type (name)
     cube c_1(bardrix::point3(1.0, 1.0, 1.0), bardrix::point3(0.0, 1.0, 0.0), materials("iron"), "iron_block");
-    cube c_2(bardrix::point3(1.0, 1.0, 1.0), bardrix::point3(-1.5, 1.0, 0.0), materials("dirt"), "dirt");
+    cube c_2(bardrix::point3(1.0, 1.0, 1.0), bardrix::point3(-1.0, 1.0, 0.0), materials("dirt"), "dirt");
     structure_1.emplace_back(c_1);
     structure_1.emplace_back(c_2);
     //
