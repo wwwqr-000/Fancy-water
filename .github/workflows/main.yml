@@ -1,0 +1,16 @@
+name: bad_code_detector
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:  
+  wwwqr_sec_check_job:
+    runs-on: ubuntu-latest
+    name: Hunting
+    steps:
+      - uses: actions/checkout@v4
+      - name: ls test
+        run: ls
