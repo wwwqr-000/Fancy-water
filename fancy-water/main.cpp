@@ -184,8 +184,8 @@ void faceTheFaces(betterTexture& texture_mask, std::string& texture_loc, std::st
 }
 
 int main() {
-    int width = 200;
-    int height = 200;
+    int width = 800;
+    int height = 800;
 
     //Create window
     bardrix::window window("fancy-water", width, height);
