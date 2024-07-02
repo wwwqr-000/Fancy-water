@@ -89,26 +89,36 @@ point2 cube::getCubeIntersectionCoords(const bardrix::point3& intersection) cons
     bardrix::vector3 normal = normal_at(intersection);
     point2 uv;
 
-    if (normal.z == 1 || normal.z == -1) {//front or back face
-        uv.x = static_cast<int>((intersection.x + 0.5) * 16);
-        uv.y = static_cast<int>((intersection.y + 0.5) * 16);
+    bardrix::point3 localIntersection = intersection - position_;
+
+    //Scale factors for texture mapping
+    double scale_x = 16.0 / dimension.x;
+    double scale_y = 16.0 / dimension.y;
+    double scale_z = 16.0 / dimension.z;
+    //
+
+    if (normal.x == 1 || normal.x == -1) {
+        uv.x = static_cast<int>((localIntersection.z + dimension.z * 0.5) * scale_z);
+        uv.y = static_cast<int>((localIntersection.y + dimension.y * 0.5) * scale_y);
         (normal.z == 1) ? uv.face = "front" : uv.face = "back";
     }
-    else if (normal.x == 1 || normal.x == -1) {//right or left face
-        uv.x = static_cast<int>((intersection.z + 0.5) * 16);
-        uv.y = static_cast<int>((intersection.y + 0.5) * 16);
+    else if (normal.y == 1 || normal.y == -1) {
+        uv.x = static_cast<int>((localIntersection.x + dimension.x * 0.5) * scale_x);
+        uv.y = static_cast<int>((localIntersection.z + dimension.z * 0.5) * scale_z);
         (normal.x == 1) ? uv.face = "right" : uv.face = "left";
     }
-    else if (normal.y == 1 || normal.y == -1) {//top or bottom face
-        uv.x = static_cast<int>((intersection.x + 0.5) * 16);
-        uv.y = static_cast<int>((intersection.z + 0.5) * 16);
+    else if (normal.z == 1 || normal.z == -1) {
+        uv.x = static_cast<int>((localIntersection.x + dimension.x * 0.5) * scale_x);
+        uv.y = static_cast<int>((localIntersection.y + dimension.y * 0.5) * scale_y);
         (normal.y == 1) ? uv.face = "top" : uv.face = "bottom";
     }
 
-    if (uv.x > 16 || uv.y > 96) {
-        uv.x = 0.0;
-        uv.y = 0.0;
-    }
+    //Check if UV is out of scope
+    if (uv.x < 0) uv.x = 0;
+    if (uv.x > 15) uv.x = 15;
+    if (uv.y < 0) uv.y = 0;
+    if (uv.y > 15) uv.y = 15;
+    //
 
     return uv;
 }

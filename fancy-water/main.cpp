@@ -90,7 +90,7 @@ double calculate_light_intensity(const bardrix::shape& shape, const bardrix::lig
 //Materials we use in our world
 bardrix::material materials(std::string name) {
     if (name == "iron") {
-        bardrix::material iron(0.2, 0.5, 0.7, 20);
+        bardrix::material iron(0.0, 0.5, 0.7, 20);
         iron.color = bardrix::color(233, 233, 233, 255);
         return iron;
     }
@@ -98,6 +98,11 @@ bardrix::material materials(std::string name) {
         bardrix::material water(0.0, 1.0, 1.0, 10.0);
         water.color = bardrix::color(0, 16, 255, 255);
         return water;
+    }
+    else if (name == "dirt") {
+        bardrix::material dirt(1.0, 1.0, 1.0, 1.0);
+        dirt.color = bardrix::color(0, 0, 0, 255);
+        return dirt;
     }
     else if (name == "lava") {
         bardrix::material lava(0.0, 1.0, 1.0, 10.0);
@@ -140,7 +145,7 @@ world createWorld(bardrix::camera &camera) {
     std::vector<cube> structure_1;
     //Size, Pos, Material, Type (name)
     cube c_1(bardrix::point3(1.0, 1.0, 1.0), bardrix::point3(0.0, 1.0, 0.0), materials("iron"), "iron_block");
-    cube c_2(bardrix::point3(1.0, 1.0, 1.0), bardrix::point3(-1.5, 1.0, 0.0), materials("iron"), "iron_block");
+    cube c_2(bardrix::point3(1.0, 1.0, 1.0), bardrix::point3(-1.5, 1.0, 0.0), materials("dirt"), "dirt");
     structure_1.emplace_back(c_1);
     structure_1.emplace_back(c_2);
     //
@@ -173,11 +178,14 @@ void faceTheFaces(betterTexture& texture_mask, std::string& texture_loc, std::st
             texture_mask.setBMP(texture_loc + "grass_block_side.bmp");
         }
     }
+    else if (type == "dirt") {
+        texture_mask.setBMP(texture_loc + "dirt.bmp");
+    }
 }
 
 int main() {
-    int width = 800;
-    int height = 800;
+    int width = 200;
+    int height = 200;
 
     //Create window
     bardrix::window window("fancy-water", width, height);
