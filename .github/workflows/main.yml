@@ -23,6 +23,6 @@ jobs:
           mkdir test_build
           cd test_build
           cmake ..
-          cmake --build
+          cmake --build .
           ctest --output-on-failure
 
