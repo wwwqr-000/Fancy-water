@@ -174,10 +174,10 @@ world createWorld(bardrix::camera &camera) {
     world w("Fancy Water", bardrix::point3(10.0, 10.0, 10.0), false, false, 10);//Open-world with volume 10x10x10 without a sun. (renderDistance=10)
 
     bardrix::light globalLight(bardrix::point3(-0.1, 10.0, -4.3), 200, bardrix::color::white());
-    cube floor(bardrix::point3(10.0, 0.1, 10.0), bardrix::point3(0.0, 0.0, 0.0));
+    cube floor(bardrix::point3(10.0, 0.1, 10.0), bardrix::point3(0.0, -5.0, 0.0));
 
     //Test structure
-    for (auto& obj : importStructure("../../../project_assets/structures/house.structure")) {
+    for (auto& obj : importStructure("../../../project_assets/structures/cross.structure")) {
         w.addObject(std::make_unique<cube>(obj));
     }
     //
@@ -255,7 +255,9 @@ void faceTheFaces(betterTexture& texture_mask, std::string& texture_loc, std::st
         }
     }
     else if (type == "dirt") {
-        texture_mask.setBMP(texture_loc + "dirt.bmp");
+        if (texture_mask.getBMP() != (texture_loc + "dirt.bmp")) {
+            texture_mask = texture(texture_loc + "dirt.bmp");
+        }
     }
 }
 
