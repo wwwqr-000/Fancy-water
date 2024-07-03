@@ -1,4 +1,4 @@
-#pragma once
+
 #include "cube.h"
 #include "point2.hpp"
 #include <optional>

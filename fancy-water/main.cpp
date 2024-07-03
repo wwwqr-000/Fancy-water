@@ -2,6 +2,7 @@
 #ifdef _WIN32
 
 #include "point2.hpp"
+#include "point3_int.hpp"
 #include "sphere.h"
 #include "window.h"
 #include "cube.h"
@@ -52,10 +53,10 @@ void tickFunc(bardrix::light &light, bardrix::window &window) {
         std::this_thread::sleep_for(std::chrono::system_clock::now() - start + std::chrono::milliseconds(200));
     }
 }
-
+/*
 double calc_distance(const bardrix::point3& p1, const bardrix::point3& p2) {
     return std::sqrt(pow(p2.x - p1.x, 2) + pow(p2.y - p1.y, 2) + pow(p2.z - p1.z, 2));
-}
+}*/
 
 /*
 Nieuwe versie van calculate_light_intensity voor reflectie met diffuse,ambient,specular
@@ -190,9 +191,57 @@ world createWorld(bardrix::camera &camera) {
     return w;
 }
 
+std::vector<std::string> loadedTextures;
+
+int loadPixels(betterTexture& texture_mask, std::string& type) {
+    int stat = -1;
+    bool exists = false;
+    for (auto& t : loadedTextures) {
+        if (t == type) {
+            exists = true;
+            break;
+        }
+    }
+    if (!exists) {
+        texture_mask.createPixels(stat);
+        loadedTextures.emplace_back(type);
+    }
+
+    return stat;
+}
+
+//Create all texture obejcts
+std::vector<betterTexture> texturesVec;
+
+std::string texture_loc = "../../../project_assets/textures/";
+
+void createTextures() {//Load all textures
+    betterTexture iron(texture_loc + "iron_block.bmp");
+    betterTexture dirt(texture_loc + "dirt.bmp");
+    int stat = -1;
+    iron.createPixels(stat);
+    dirt.createPixels(stat);
+
+    texturesVec.emplace_back(iron);
+    texturesVec.emplace_back(dirt);
+}
+
+betterTexture texture(std::string& imgPath) {//Get a texture obj
+    for (auto& obj : texturesVec) {
+        if (obj.getBMP() == imgPath) {
+;            return obj;
+        }
+    }
+
+    return betterTexture{ texture_loc + "missing.bmp" };
+}
+//
+
 void faceTheFaces(betterTexture& texture_mask, std::string& texture_loc, std::string& type, point2& pixelCoord) {//Used to give cube faces textures
     if (type == "iron_block") {
-        texture_mask.setBMP(texture_loc + "iron_block.bmp");
+        if (texture_mask.getBMP() != (texture_loc + "iron_block.bmp")) {
+            texture_mask = texture(texture_loc + "iron_block.bmp");
+        }
     }
     else if (type == "grass_block") {
         if (pixelCoord.face == "top") {
@@ -211,14 +260,14 @@ void faceTheFaces(betterTexture& texture_mask, std::string& texture_loc, std::st
 }
 
 int main() {
-    int width = 800;
-    int height = 800;
+    int width = 600;
+    int height = 600;
 
     //Create window
     bardrix::window window("fancy-water", width, height);
 
     // Create a camera
-    bardrix::camera camera = bardrix::camera({ -0.1, 2.2, -4.6 }, { 0,0,1 }, width, height, 60);
+    bardrix::camera camera = bardrix::camera({-0.1, 2.2, -4.6}, {0, 0, 1}, width, height, 60);
 
     //Create a world object
     world fancy_world = createWorld(camera);
@@ -228,11 +277,16 @@ int main() {
         
         // Draw the scene
         std::string texture_loc = "../../../project_assets/textures/";
+        //Initialize textures and global mask
         betterTexture texture_mask(texture_loc + "missing.bmp");
+        int stat = 0;
+        texture_mask.createPixels(stat);
+        createTextures();//Load all bmp files
+        //
         for (int y = 0; y < window->get_height(); y++) {
             for (int x = 0; x < window->get_width(); x++) {
                 bardrix::ray ray = *fancy_world.getCamera().shoot_ray(x, y, fancy_world.getRenderDistance());
-                bardrix::color color = bardrix::color::black();
+                bardrix::color color(255, 255, 255, 255);
                 //water.render(buffer, 20, 20);
                 // Variables to keep track of the closest intersection point and object
                 std::optional<bardrix::point3> closest_intersection;
@@ -245,7 +299,7 @@ int main() {
                 for (const auto& obj : fancy_world.getObjects()) {
                     std::optional<bardrix::point3> intersection = obj->intersection(ray);
                     if (intersection.has_value()) {
-                        double distance = calc_distance(fancy_world.getCamera().position, intersection.value());
+                        double distance = fancy_world.getCamera().position.distance_squared(intersection.value());
                         if (distance < closest_distance) {
                             closest_distance = distance;
                             closest_intersection = intersection;
@@ -266,14 +320,13 @@ int main() {
                     if (closest_cube && closest_cube->getType() != "") {
                         //Get texture color based on pixel coordinate
                         point2 pixelCoord = closest_cube->getCubeIntersectionCoords(closest_intersection.value());
-                        std::string top, bottom, front, back, left, right;
                         faceTheFaces(texture_mask, texture_loc, closest_cube->getType(), pixelCoord);
-                        bardrix::point3 RGB = texture_mask.getPixelValue(pixelCoord.x, pixelCoord.y);
+                        point3_int RGB = texture_mask.getPixelValue(pixelCoord.x, pixelCoord.y);
                         bardrix::color pColor(RGB.x, RGB.y, RGB.z, 255);
                         //
                         for (bardrix::light& l : fancy_world.getLights()) {
                             double projected_angle_intensity = calculate_light_intensity(*closest_object, l, fancy_world.getCamera(), intersection_point);
-                            color += l.color.blended(pColor) * projected_angle_intensity;
+                            color = pColor * projected_angle_intensity;
                         }
                     }
                     //

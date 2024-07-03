@@ -16,10 +16,10 @@ class world {
         bardrix::camera camera;
 
         //Bare minimum.
-        world(std::string name, bardrix::point3 dimBorder, bool sun, bool box, size_t renderDistance) : name(name), dimBorder(dimBorder), sun(sun), box(box), renderDistance(renderDistance) {}
+        world(std::string name, bardrix::point3 dimBorder, bool sun, bool box, size_t renderDistance) : name(std::move(name)), dimBorder(dimBorder), sun(sun), box(box), renderDistance(renderDistance) {}
 
         //Fully init.
-        world(std::string name, std::vector<std::unique_ptr<bardrix::shape>> objects, std::vector<bardrix::light> lights, bardrix::point3 dimBorder, bool sun, bool box, bardrix::camera, size_t renderDistance) : name(name), objects(std::move(objects)), lights(lights), dimBorder(dimBorder), sun(sun), box(box), camera(camera), renderDistance(renderDistance) {}
+        world(std::string name, std::vector<std::unique_ptr<bardrix::shape>> objects, std::vector<bardrix::light> lights, bardrix::point3 dimBorder, bool sun, bool box, bardrix::camera, size_t renderDistance) : name(std::move(name)), objects(std::move(objects)), lights(lights), dimBorder(dimBorder), sun(sun), box(box), camera(camera), renderDistance(renderDistance) {}
 
         //Returns all the objects (shapes) from the object vector.
         std::vector<std::unique_ptr<bardrix::shape>> &getObjects() { return this->objects; }

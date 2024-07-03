@@ -1,5 +1,6 @@
 #pragma once
 #include "point2.hpp"
+#include "point3_int.hpp"
 #include <bardrix/point3.h>
 #include "cube.h"
 #include "sphere.h"
@@ -41,6 +42,14 @@ class betterTexture {
             uint8_t red;
         };
 
+        struct check {
+            size_t operator()(const point2& p) const {
+                return (std::hash<int>()(p.x_i)) ^ (std::hash<int>()(p.y_i));
+            }
+        };
+
+        std::unordered_map<point2, RGB, check> pixels;
+
     public:
         //Minimal init
         betterTexture() {}
@@ -52,33 +61,48 @@ class betterTexture {
         std::string getBMP() { return this->imgPath; }
         //
 
-        bardrix::point3 getPixelValue(int32_t x, int32_t y) {//Get RGB value from pixel coordinates (Based on BMP format)
+        std::unordered_map<point2, RGB, check> getPixels() { return this->pixels; }
+
+        void createPixels(int &status) {
             std::ifstream bmp(this->imgPath, std::ios::binary);
             if (!bmp) {
-                return bardrix::point3(1.0, 1.0, 1.0);
+                status = 1;
+                return;
             }
 
             BMPHeader bmpHeader;
             bmp.read(reinterpret_cast<char*>(&bmpHeader), sizeof(BMPHeader));
             if (bmpHeader.bfType != 0x4D42) {//Check if file really is a BMP.
-                return bardrix::point3(2.0, 2.0, 2.0);
+                status = 2;
+                return;
             }
 
             DIBHeader dibHeader;
             bmp.read(reinterpret_cast<char*>(&dibHeader), sizeof(DIBHeader));
             if (dibHeader.biBitCount != 24) {
-                return bardrix::point3(3.0, 3.0, 3.0);
+                status = 3;
+                return;
             }
 
             int32_t width = dibHeader.biWidth;
             int32_t height = dibHeader.biHeight;
-            int32_t adjustedY = height - y - 1;//Inverted y-dim. (y=0 was on the bottom of the texture file, now it's the top.)
-            int rowSize = (width * 3 + 3) & (~3);
-            int pixelOffset = bmpHeader.bfOffBits + adjustedY * rowSize + x * 3;
-            bmp.seekg(pixelOffset, std::ios::beg);
-            RGB pixel;
-            bmp.read(reinterpret_cast<char*>(&pixel), sizeof(RGB));
+            for (int x = 0; x < 16; x++) {
+                for (int y = 0; y < 16; y++) {
+                    int32_t adjustedY = height - y - 1;//Inverted y-dim. (y=0 was on the bottom of the texture file, now it's the top.)
+                    int rowSize = (width * 3 + 3) & (~3);
+                    int pixelOffset = bmpHeader.bfOffBits + adjustedY * rowSize + x * 3;
+                    bmp.seekg(pixelOffset, std::ios::beg);
+                    RGB pixel_;
+                    bmp.read(reinterpret_cast<char*>(&pixel_), sizeof(RGB));
+                    point2 pos{ x, y };
+                    pixels[pos] = pixel_;
+                }
+            }
+            status = 0;
+        }
 
-            return bardrix::point3((double)pixel.red, (double)pixel.green, (double)pixel.blue);
+        point3_int getPixelValue(int x, int y) {//Get RGB value from pixel coordinates (Based on BMP format)
+            point2 pos{ x, y };
+            return point3_int{ pixels[pos].red, pixels[pos].green, pixels[pos].blue };
         }
 };
