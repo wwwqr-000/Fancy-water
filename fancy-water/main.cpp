@@ -23,6 +23,7 @@
 #include <bardrix/light.h>
 #include <bardrix/camera.h>
 #include <bardrix/color.h>
+#include <filesystem>
 
 // Undefine any macros that might conflict
 #undef min
@@ -151,6 +152,16 @@ std::vector<std::string> explode(std::string const& s, char delim) {//Explode a 
     return result;
 }
 
+cube blocks(std::string& name, bardrix::point3& pos) {
+    bardrix::point3 cs(1.0, 1.0, 1.0);
+    if (name == "iron_block") {
+        return cube{ cs, pos, materials("iron"), "iron_block"};
+    }
+    else if (name == "dirt") {
+        return cube{ cs, pos, materials("dirt"), "dirt" };
+    }
+}
+
 std::vector<cube> importStructure(std::string path) {//Create a cube vector based on raw text inside a .structure file
     std::vector<cube> cubes;
     std::ifstream structure(path);
@@ -158,7 +169,7 @@ std::vector<cube> importStructure(std::string path) {//Create a cube vector base
     while (std::getline(structure, line)) {
         try {
             std::vector<std::string> arr = explode(line, ',');
-            cube c(bardrix::point3(1.0, 1.0, 1.0), bardrix::point3(std::stod(arr[0]), std::stod(arr[1]), std::stod(arr[2])), materials("iron"), arr[3]);//W.I.P add block class
+            cube c = blocks(arr[3], bardrix::point3(std::stod(arr[0]), std::stod(arr[1]), std::stod(arr[2])));
             cubes.emplace_back(c);
         }
         catch (std::exception) {
@@ -171,14 +182,16 @@ std::vector<cube> importStructure(std::string path) {//Create a cube vector base
 }
 
 world createWorld(bardrix::camera &camera) {
-    world w("Fancy Water", bardrix::point3(10.0, 10.0, 10.0), false, false, 10);//Open-world with volume 10x10x10 without a sun. (renderDistance=10)
+    world w("Fancy Water", bardrix::point3(10.0, 10.0, 10.0), false, false, 100);//Open-world with volume 10x10x10 without a sun. (renderDistance=10)
 
     bardrix::light globalLight(bardrix::point3(-0.1, 10.0, -4.3), 200, bardrix::color::white());
     cube floor(bardrix::point3(10.0, 0.1, 10.0), bardrix::point3(0.0, -5.0, 0.0));
 
-    //Test structure
-    for (auto& obj : importStructure("../../../project_assets/structures/cross.structure")) {
-        w.addObject(std::make_unique<cube>(obj));
+    //Create structures based on structure files from structures folder
+    for (auto& entr : std::filesystem::directory_iterator("../../../project_assets/structures")) {
+        for (auto& obj : importStructure(entr.path().string())) {
+            w.addObject(std::make_unique<cube>(obj));
+        }
     }
     //
 
@@ -210,12 +223,10 @@ int loadPixels(betterTexture& texture_mask, std::string& type) {
     return stat;
 }
 
-//Create all texture obejcts
+//Create log all the betterTexture objects
 std::vector<betterTexture> texturesVec;
 
-std::string texture_loc = "../../../project_assets/textures/";
-
-void createTextures() {//Load all textures
+void createTextures(std::string& texture_loc) {//Load all textures
     betterTexture iron(texture_loc + "iron_block.bmp");
     betterTexture dirt(texture_loc + "dirt.bmp");
     int stat = -1;
@@ -226,38 +237,43 @@ void createTextures() {//Load all textures
     texturesVec.emplace_back(dirt);
 }
 
-betterTexture texture(std::string& imgPath) {//Get a texture obj
+betterTexture texture(std::string& imgPath, std::string& texture_loc) {//Get a texture obj
     for (auto& obj : texturesVec) {
         if (obj.getBMP() == imgPath) {
 ;            return obj;
         }
     }
-
     return betterTexture{ texture_loc + "missing.bmp" };
 }
 //
 
+void update_texture_mask(betterTexture& texture_mask, std::string& imgPath, std::string& texture_loc) {
+    if (texture_mask.getBMP() != (texture_loc + imgPath)) {
+        texture_mask = texture(texture_loc + imgPath, texture_loc);
+    }
+}
+
 void faceTheFaces(betterTexture& texture_mask, std::string& texture_loc, std::string& type, point2& pixelCoord) {//Used to give cube faces textures
     if (type == "iron_block") {
-        if (texture_mask.getBMP() != (texture_loc + "iron_block.bmp")) {
-            texture_mask = texture(texture_loc + "iron_block.bmp");
-        }
+        update_texture_mask(texture_mask, std::string("iron_block.bmp"), texture_loc);
     }
     else if (type == "grass_block") {
+
         if (pixelCoord.face == "top") {
             texture_mask.setBMP(texture_loc + "grass_top.bmp");
+            return;
         }
         else if (pixelCoord.face == "bottom") {
             texture_mask.setBMP(texture_loc + "dirt.bmp");
+            return;
         }
         else {
             texture_mask.setBMP(texture_loc + "grass_block_side.bmp");
+            return;
         }
     }
     else if (type == "dirt") {
-        if (texture_mask.getBMP() != (texture_loc + "dirt.bmp")) {
-            texture_mask = texture(texture_loc + "dirt.bmp");
-        }
+        update_texture_mask(texture_mask, std::string("dirt.bmp"), texture_loc);
     }
 }
 
@@ -283,7 +299,7 @@ int main() {
         betterTexture texture_mask(texture_loc + "missing.bmp");
         int stat = 0;
         texture_mask.createPixels(stat);
-        createTextures();//Load all bmp files
+        createTextures(texture_loc);//Load all bmp files into pixel structed vectors
         //
         for (int y = 0; y < window->get_height(); y++) {
             for (int x = 0; x < window->get_width(); x++) {
