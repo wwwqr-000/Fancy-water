@@ -130,6 +130,11 @@ bardrix::material materials(std::string name) {
         foliage.color = bardrix::color(0, 175, 23, 150);
         return foliage;
     }
+    else if (name == "obsidian") {
+        bardrix::material obsidian(0.0, 0.5, 0.9, 20);
+        obsidian.color = bardrix::color(7, 0, 56, 255);
+        return obsidian;
+    }
     else if (name == "test") {
         bardrix::material test(0, 0.5, 0.7, 20);
         test.color = bardrix::color(255, 0, 0, 255);
@@ -160,6 +165,15 @@ cube blocks(std::string& name, bardrix::point3& pos) {
     else if (name == "dirt") {
         return cube{ cs, pos, materials("dirt"), "dirt" };
     }
+    else if (name == "spruce_log") {
+        return cube{ cs, pos, materials("dirt"), "spruce_log" };
+    }
+    else if (name == "obsidian") {
+        return cube{ cs, pos, materials("obsidian"), "obsidian" };
+    }
+    else if (name == "grass_block") {
+        return cube{ cs, pos, materials("dirt"), "grass_block" };
+    }
 }
 
 std::vector<cube> importStructure(std::string path) {//Create a cube vector based on raw text inside a .structure file
@@ -184,7 +198,8 @@ std::vector<cube> importStructure(std::string path) {//Create a cube vector base
 world createWorld(bardrix::camera &camera) {
     world w("Fancy Water", bardrix::point3(10.0, 10.0, 10.0), false, false, 100);//Open-world with volume 10x10x10 without a sun. (renderDistance=10)
 
-    bardrix::light globalLight(bardrix::point3(-0.1, 10.0, -4.3), 200, bardrix::color::white());
+    bardrix::light globalLight(bardrix::point3(-3.2, 12.9, -5.8), 100, bardrix::color::white());
+    bardrix::light l2(bardrix::point3(6.0, 2.2, -4.6), 50, bardrix::color::white());
     cube floor(bardrix::point3(10.0, 0.1, 10.0), bardrix::point3(0.0, -5.0, 0.0));
 
     //Create structures based on structure files from structures folder
@@ -199,6 +214,7 @@ world createWorld(bardrix::camera &camera) {
 
     w.setCamera(camera);
     w.addLight(globalLight);
+    w.addLight(l2);
     w.addObject(std::make_unique<cube>(floor));
 
     return w;
@@ -229,12 +245,29 @@ std::vector<betterTexture> texturesVec;
 void createTextures(std::string& texture_loc) {//Load all textures
     betterTexture iron(texture_loc + "iron_block.bmp");
     betterTexture dirt(texture_loc + "dirt.bmp");
+    betterTexture sp_n(texture_loc + "spruce_log.bmp");
+    betterTexture sp_o(texture_loc + "spruce_log_top.bmp");
+    betterTexture obi(texture_loc + "obsidian.bmp");
+    betterTexture gr_t(texture_loc + "grass_top.bmp");
+    betterTexture gr_s(texture_loc + "grass_block_side.bmp");
+
     int stat = -1;
     iron.createPixels(stat);
     dirt.createPixels(stat);
+    sp_n.createPixels(stat);
+    sp_n.createPixels(stat);
+    sp_o.createPixels(stat);
+    obi.createPixels(stat);
+    gr_t.createPixels(stat);
+    gr_s.createPixels(stat);
 
     texturesVec.emplace_back(iron);
     texturesVec.emplace_back(dirt);
+    texturesVec.emplace_back(sp_n);
+    texturesVec.emplace_back(sp_o);
+    texturesVec.emplace_back(obi);
+    texturesVec.emplace_back(gr_t);
+    texturesVec.emplace_back(gr_s);
 }
 
 betterTexture texture(std::string& imgPath, std::string& texture_loc) {//Get a texture obj
@@ -258,22 +291,29 @@ void faceTheFaces(betterTexture& texture_mask, std::string& texture_loc, std::st
         update_texture_mask(texture_mask, std::string("iron_block.bmp"), texture_loc);
     }
     else if (type == "grass_block") {
-
         if (pixelCoord.face == "top") {
-            texture_mask.setBMP(texture_loc + "grass_top.bmp");
-            return;
+            update_texture_mask(texture_mask, std::string("grass_top.bmp"), texture_loc);
         }
         else if (pixelCoord.face == "bottom") {
-            texture_mask.setBMP(texture_loc + "dirt.bmp");
-            return;
+            update_texture_mask(texture_mask, std::string("dirt.bmp"), texture_loc);
         }
         else {
-            texture_mask.setBMP(texture_loc + "grass_block_side.bmp");
-            return;
+            update_texture_mask(texture_mask, std::string("grass_block_side.bmp"), texture_loc);
         }
     }
     else if (type == "dirt") {
         update_texture_mask(texture_mask, std::string("dirt.bmp"), texture_loc);
+    }
+    else if (type == "spruce_log") {
+        if (pixelCoord.face == "top") {
+            update_texture_mask(texture_mask, std::string("spruce_log_top.bmp"), texture_loc);
+        }
+        else {
+            update_texture_mask(texture_mask, std::string("spruce_log.bmp"), texture_loc);
+        }
+    }
+    else if (type == "obsidian") {
+        update_texture_mask(texture_mask, std::string("obsidian.bmp"), texture_loc);
     }
 }
 
@@ -304,7 +344,7 @@ int main() {
         for (int y = 0; y < window->get_height(); y++) {
             for (int x = 0; x < window->get_width(); x++) {
                 bardrix::ray ray = *fancy_world.getCamera().shoot_ray(x, y, fancy_world.getRenderDistance());
-                bardrix::color color(255, 255, 255, 255);
+                bardrix::color color(0, 0, 0, 255);
                 //water.render(buffer, 20, 20);
                 // Variables to keep track of the closest intersection point and object
                 std::optional<bardrix::point3> closest_intersection;
@@ -360,7 +400,7 @@ int main() {
         }    
     };
     window.on_keydown = [&fancy_world](bardrix::window* window, WPARAM key) {
-        //std::cout << key;//Key logger 
+        std::cout << key;//Key logger 
         switch (key) {
             case 0x41: // A-toets
                 fancy_world.camera.position.x += 0.1;
@@ -379,6 +419,18 @@ int main() {
                 break;
             case 0x45: // E-toets
                 fancy_world.camera.position.z += 0.1;
+                break;
+            case 38://up-arrow
+                fancy_world.camera.set_direction(bardrix::quaternion::rotate_degrees(fancy_world.camera.get_direction(), { 1, 0, 0 }, 0.75));
+                break;
+            case 40://down-arrow
+                fancy_world.camera.set_direction(bardrix::quaternion::rotate_degrees(fancy_world.camera.get_direction(), { -1, 0, 0 }, 0.75));
+                break;
+            case 37://left-arrow
+                fancy_world.camera.set_direction(bardrix::quaternion::rotate_degrees(fancy_world.camera.get_direction(), { 0, -1, 0 }, 0.75));
+                break;
+            case 39://right-arrow
+                fancy_world.camera.set_direction(bardrix::quaternion::rotate_degrees(fancy_world.camera.get_direction(), { 0, 1, 0 }, 0.75));
                 break;
         }
         std::cout << "x:" << fancy_world.camera.position.x << "\ny:" << fancy_world.camera.position.y << "\nz:" << fancy_world.camera.position.z << "\n";

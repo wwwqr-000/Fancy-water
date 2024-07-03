@@ -99,18 +99,18 @@ point2 cube::getCubeIntersectionCoords(const bardrix::point3& intersection) cons
 
     if (normal.x == 1 || normal.x == -1) {
         uv.x = static_cast<int>((localIntersection.z + dimension.z * 0.5) * scale_z);
-        uv.y = static_cast<int>((localIntersection.y + dimension.y * 0.5) * scale_y);
-        (normal.z == 1) ? uv.face = "front" : uv.face = "back";
+        uv.y = 15 - static_cast<int>((localIntersection.y + dimension.y * 0.5) * scale_y);
+        (normal.z == 1) ? uv.face = "left" : uv.face = "right";
     }
     else if (normal.y == 1 || normal.y == -1) {
         uv.x = static_cast<int>((localIntersection.x + dimension.x * 0.5) * scale_x);
         uv.y = static_cast<int>((localIntersection.z + dimension.z * 0.5) * scale_z);
-        (normal.x == 1) ? uv.face = "right" : uv.face = "left";
+        (normal.x == 1) ? uv.face = "bottom" : uv.face = "top";
     }
     else if (normal.z == 1 || normal.z == -1) {
         uv.x = static_cast<int>((localIntersection.x + dimension.x * 0.5) * scale_x);
-        uv.y = static_cast<int>((localIntersection.y + dimension.y * 0.5) * scale_y);
-        (normal.y == 1) ? uv.face = "top" : uv.face = "bottom";
+        uv.y = 15 - static_cast<int>((localIntersection.y + dimension.y * 0.5) * scale_y);
+        (normal.y == 1) ? uv.face = "back" : uv.face = "front";
     }
 
     //Check if UV is out of scope
